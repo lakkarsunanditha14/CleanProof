@@ -20,3 +20,13 @@ export const WARDS = [
 export function categoryLabel(value) {
   return CATEGORIES.find((c) => c.value === value)?.label || value;
 }
+
+// Must match DELAY_REASONS in backend/app/config.py.
+export const DELAY_REASONS = [
+  'Vehicle or staff shortage',
+  'Heavy rain or waterlogging',
+  'Access blocked (traffic, parked vehicles, event)',
+  'Needed special equipment (JCB, tractor, suction machine)',
+  'Waste much larger than reported',
+  'Other',
+];

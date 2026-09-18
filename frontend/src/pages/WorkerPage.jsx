@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Camera, MapPin, X, ShieldCheck, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import { Camera, MapPin, X, ShieldCheck, AlertCircle, RefreshCw, ArrowRight, Clock } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -10,7 +10,7 @@ import SlaBadge from '../components/SlaBadge';
 import VerdictBadge from '../components/VerdictBadge';
 import EmptyState from '../components/EmptyState';
 import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
-import { WARDS, categoryLabel } from '../constants';
+import { WARDS, DELAY_REASONS, categoryLabel } from '../constants';
 import { fetchApi, imageUrl, parseUtc, formatHours, formatDateTime } from '../api';
 
 const TABS = [
@@ -29,6 +29,9 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [delayReason, setDelayReason] = useState('');
+  const [delayNote, setDelayNote] = useState('');
+  const overdueBy = -hoursLeft(complaint); // positive when past the deadline
 
   function handlePhoto(e) {
     const file = e.target.files?.[0];
@@ -39,10 +42,16 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
 
   async function submit() {
     if (!photo) return setError('Add the after photo first.');
+    if (overdueBy > 0 && !delayReason) return setError('This is past the deadline. Choose a reason for the delay.');
+    if (delayReason === 'Other' && !delayNote.trim()) return setError('Describe the delay when the reason is "Other".');
     setError('');
     setSubmitting(true);
     const form = new FormData();
     form.append('photo', photo);
+    if (overdueBy > 0) {
+      form.append('delay_reason', delayReason);
+      if (delayNote.trim()) form.append('delay_note', delayNote.trim());
+    }
     try {
       const res = await fetchApi(`/api/complaints/${complaint.id}/resolve`, { method: 'POST', body: form });
       setResult(res);
@@ -90,6 +99,29 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
             </div>
           </div>
 
+          {overdueBy > 0 && !result && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+              <p className="text-sm font-semibold text-[#C77700] flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Past the deadline by {formatHours(overdueBy)}. A reason is required.
+              </p>
+              <select
+                value={delayReason}
+                onChange={(e) => setDelayReason(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-[#0F6E5C] focus:outline-none"
+              >
+                <option value="">Choose the reason for the delay</option>
+                {DELAY_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <input
+                value={delayNote}
+                onChange={(e) => setDelayNote(e.target.value)}
+                placeholder={delayReason === 'Other' ? 'Describe the delay (required)' : 'Details (optional)'}
+                maxLength={300}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-[#0F6E5C] focus:outline-none"
+              />
+            </div>
+          )}
+
           {error && (
             <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-[#B42318]">
               <AlertCircle className="w-5 h-5 shrink-0" /> {error}
@@ -107,6 +139,11 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
                 <ScoreHeader score={result.score} verdict={result.verdict} />
               </div>
               <ReasonList reasons={result.reasons} />
+              <p className={`text-sm font-semibold ${result.closed_late ? 'text-[#C77700]' : 'text-emerald-700'}`}>
+                {result.closed_late
+                  ? `Closed ${formatHours(result.late_by_hours)} after the deadline. Reason: ${result.delay_reason}${result.delay_note ? ` (${result.delay_note})` : ''}`
+                  : 'Closed before the deadline.'}
+              </p>
               <p className="text-sm text-slate-600">
                 {result.verdict === 'VERIFIED'
                   ? 'Closure accepted.'
@@ -236,7 +273,12 @@ export default function WorkerPage() {
                   <div className="mt-auto pt-2 flex items-center justify-between gap-3">
                     {c.status === 'RESOLVED' ? (
                       <>
-                        <span className="text-sm text-slate-600">Score <b className="text-slate-900">{c.latest_score}</b>/100</span>
+                        <span className="text-sm text-slate-600">
+                          Score <b className="text-slate-900">{c.latest_score}</b>/100 &middot;{' '}
+                          {c.sla_status === 'Breached'
+                            ? <span className="font-semibold text-[#C77700]">Closed late</span>
+                            : <span className="font-semibold text-emerald-700">On time</span>}
+                        </span>
                         <Link to={`/track?id=${c.id}`} className="text-sm font-semibold text-[#0F6E5C] hover:underline">Details</Link>
                       </>
                     ) : (

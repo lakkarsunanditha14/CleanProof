@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from app.database import get_db
-from app.config import IMAGES_DIR, VALID_CATEGORIES, VALID_WARDS, SLA_HOURS
+from app.config import IMAGES_DIR, VALID_CATEGORIES, VALID_WARDS, SLA_HOURS, DELAY_REASONS
 from app.models import Complaint, Resolution, ReopenLog
 from app.schemas import (
     ComplaintResponse,
@@ -215,6 +215,8 @@ async def resolve_complaint(
     photo: UploadFile = File(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
+    delay_reason: Optional[str] = Form(None),
+    delay_note: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -224,6 +226,23 @@ async def resolve_complaint(
     complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
+
+    # A closure after the deadline must say why (sla_deadline restarts on a citizen reopen)
+    closed_at = datetime.utcnow()
+    closed_late = closed_at > complaint.sla_deadline
+    late_by_hours = round((closed_at - complaint.sla_deadline).total_seconds() / 3600, 2) if closed_late else None
+    delay_reason = delay_reason.strip() if delay_reason else None
+    delay_note = delay_note.strip() if delay_note else None
+    if closed_late:
+        if delay_reason not in DELAY_REASONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"This complaint is past its deadline. Choose a reason for the delay: {DELAY_REASONS}"
+            )
+        if delay_reason == "Other" and not delay_note:
+            raise HTTPException(status_code=400, detail="Describe the delay when the reason is 'Other'.")
+    else:
+        delay_reason = delay_note = None
 
     # Save resolution image
     file_ext = Path(photo.filename).suffix or ".jpg"
@@ -267,7 +286,11 @@ async def resolve_complaint(
         exif_passed=verification_result["exif_passed"],
         has_exif_metadata=verification_result["has_exif_metadata"],
         human_review_status="PENDING",
-        created_at=datetime.utcnow()
+        closed_late=closed_late,
+        late_by_hours=late_by_hours,
+        delay_reason=delay_reason,
+        delay_note=delay_note,
+        created_at=closed_at
     )
 
     # Update complaint status to RESOLVED

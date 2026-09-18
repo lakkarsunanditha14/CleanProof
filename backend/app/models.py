@@ -56,6 +56,13 @@ class Resolution(Base):
     has_exif_metadata = Column(Boolean, default=False)
 
     human_review_status = Column(String(50), default="PENDING") # 'PENDING', 'Genuine', 'Confirmed fake'
+
+    # Deadline accountability: was it closed after the deadline, by how much, and why
+    closed_late = Column(Boolean, default=False)
+    late_by_hours = Column(Float, nullable=True)
+    delay_reason = Column(String(100), nullable=True)
+    delay_note = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     complaint = relationship("Complaint", back_populates="resolutions")

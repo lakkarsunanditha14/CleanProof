@@ -32,6 +32,10 @@ class ResolutionResponse(BaseModel):
     exif_passed: Optional[bool] = None
     has_exif_metadata: bool
     human_review_status: str
+    closed_late: bool = False
+    late_by_hours: Optional[float] = None
+    delay_reason: Optional[str] = None
+    delay_note: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -134,6 +138,8 @@ class WardSLABreakdown(BaseModel):
     breached: int
     adherence_percent: float
     false_closures: int
+    closed_late: int = 0
+    overdue_open: int = 0
 
 class CategorySLABreakdown(BaseModel):
     category: str
@@ -143,6 +149,10 @@ class CategorySLABreakdown(BaseModel):
     on_time: int
     breached: int
     adherence_percent: float
+
+class DelayReasonStat(BaseModel):
+    reason: str
+    count: int
 
 class FalseClosureStat(BaseModel):
     ward: str

@@ -28,6 +28,16 @@ function pointState(p) {
   return { key: 'open', color: '#2563EB', label: 'Open, on time' };
 }
 
+// Short chart labels; the tooltip shows the full reason.
+const SHORT_REASON = {
+  'Vehicle or staff shortage': 'No vehicle / staff',
+  'Heavy rain or waterlogging': 'Rain / waterlogging',
+  'Access blocked (traffic, parked vehicles, event)': 'Access blocked',
+  'Needed special equipment (JCB, tractor, suction machine)': 'Special equipment',
+  'Waste much larger than reported': 'Larger than reported',
+  Other: 'Other',
+};
+
 const LEGEND = [
   { color: '#2563EB', label: 'Open, on time' },
   { color: GREEN, label: 'Verified closure' },
@@ -77,13 +87,14 @@ export default function DashboardPage() {
     setLoading(true);
     setError('');
     try {
-      const [stats, wards, categories, points] = await Promise.all([
+      const [stats, wards, categories, points, delays] = await Promise.all([
         fetchApi('/api/dashboard/stats'),
         fetchApi('/api/dashboard/sla-by-ward'),
         fetchApi('/api/dashboard/sla-by-category'),
         fetchApi('/api/dashboard/map-data'),
+        fetchApi('/api/dashboard/delay-reasons'),
       ]);
-      setData({ stats, wards, categories, points });
+      setData({ stats, wards, categories, points, delays });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -109,6 +120,7 @@ export default function DashboardPage() {
       byFalse: [...wards].sort((a, b) => b.false_closures - a.false_closures),
       categories: data.categories.map((c) => ({ ...c, name: `${categoryLabel(c.category)} (${c.sla_hours}h)` })),
       maxFalse: Math.max(1, ...wards.map((w) => w.false_closures)),
+      delays: data.delays.map((d) => ({ ...d, label: SHORT_REASON[d.reason] || d.reason })),
     };
   }, [data]);
 
@@ -235,7 +247,8 @@ export default function DashboardPage() {
             </ChartCard>
           </div>
 
-          <ChartCard title="Deadlines by category" subtitle="Official SBM-U 2.0 deadline in brackets." height={260}>
+          <div className="grid lg:grid-cols-2 gap-6">
+          <ChartCard title="Deadlines by category" subtitle="Official SBM-U 2.0 deadline in brackets." height={280}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={derived.categories} margin={{ top: 8, right: 8, left: -12, bottom: 4 }} barGap={2}>
                 <CartesianGrid vertical={false} stroke={GRID} />
@@ -249,6 +262,21 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </ChartCard>
 
+          <ChartCard title="Why deadlines were missed" subtitle="Reason the worker gave when closing a complaint after its deadline." height={280}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={derived.delays} layout="vertical" margin={{ top: 4, right: 36, left: 8, bottom: 4 }}>
+                <CartesianGrid horizontal={false} stroke={GRID} />
+                <XAxis type="number" allowDecimals={false} {...axisProps} />
+                <YAxis type="category" dataKey="label" width={170} {...axisProps} />
+                <Tooltip {...tooltipProps} formatter={(v) => [v, 'Late closures']} labelFormatter={(_, p) => p?.[0]?.payload.reason} />
+                <Bar dataKey="count" fill={AMBER} radius={[0, 4, 4, 0]} barSize={16}>
+                  <LabelList dataKey="count" position="right" style={{ fill: INK, fontSize: 12, fontWeight: 600 }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+          </div>
+
           <Card padding="p-0" className="overflow-hidden">
             <div className="p-6 pb-4">
               <h3 className="font-bold text-slate-900">Ward accountability table</h3>
@@ -261,7 +289,8 @@ export default function DashboardPage() {
                     <th className="text-left font-semibold px-6 py-3">Ward</th>
                     <th className="text-right font-semibold px-4 py-3">Complaints</th>
                     <th className="text-right font-semibold px-4 py-3">On time</th>
-                    <th className="text-right font-semibold px-4 py-3">Missed</th>
+                    <th className="text-right font-semibold px-4 py-3">Closed late</th>
+                    <th className="text-right font-semibold px-4 py-3">Overdue now</th>
                     <th className="text-right font-semibold px-4 py-3">Suspected fake</th>
                     <th className="text-left font-semibold px-6 py-3">Flag</th>
                   </tr>
@@ -272,7 +301,8 @@ export default function DashboardPage() {
                       <td className="px-6 py-3 font-semibold text-slate-900">{w.ward}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{w.total}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold">{w.adherence_percent}%</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{w.breached}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{w.closed_late}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{w.overdue_open}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{w.false_closures}</td>
                       <td className="px-6 py-3">
                         {w.hotspot ? (

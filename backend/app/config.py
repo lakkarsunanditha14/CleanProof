@@ -38,6 +38,16 @@ SLA_HOURS = {
 }
 
 VALID_CATEGORIES = list(SLA_HOURS.keys())
+
+# A worker closing a complaint after its deadline must pick one of these.
+DELAY_REASONS = [
+    "Vehicle or staff shortage",
+    "Heavy rain or waterlogging",
+    "Access blocked (traffic, parked vehicles, event)",
+    "Needed special equipment (JCB, tractor, suction machine)",
+    "Waste much larger than reported",
+    "Other",
+]
 VALID_WARDS = [
     "Ameerpet",
     "Kukatpally",

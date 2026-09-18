@@ -148,6 +148,12 @@ export default function TrackPage() {
                 </p>
               </div>
             </div>
+            {res?.closed_late && res.delay_reason && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+                <span className="font-semibold text-[#C77700]">Worker's reason for the delay: </span>
+                <span className="text-slate-800">{res.delay_reason}{res.delay_note ? ` - ${res.delay_note}` : ''}</span>
+              </div>
+            )}
             {complaint.description && <p className="text-sm text-slate-600">{complaint.description}</p>}
           </Card>
 

@@ -2,13 +2,14 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.config import VALID_WARDS, VALID_CATEGORIES, SLA_HOURS
+from app.config import VALID_WARDS, VALID_CATEGORIES, SLA_HOURS, DELAY_REASONS
 from app.models import Complaint, Resolution, ReopenLog
 from app.schemas import (
     DashboardStatsResponse,
     WardSLABreakdown,
     CategorySLABreakdown,
     FalseClosureStat,
+    DelayReasonStat,
     MapPointResponse
 )
 from app.services.sla_service import calculate_sla_info
@@ -96,15 +97,21 @@ def get_sla_by_ward(db: Session = Depends(get_db)):
         
         on_time = 0
         breached = 0
+        closed_late = 0
+        overdue_open = 0
         for c in ward_complaints:
             latest_res = c.resolutions[0] if c.resolutions else None
             res_time = latest_res.created_at if latest_res else None
             sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time, reopened_at=c.reopened_at)
             if sla.is_breached:
                 breached += 1
+                if c.status == "RESOLVED":
+                    closed_late += 1
+                else:
+                    overdue_open += 1
             else:
                 on_time += 1
-                
+
         adherence_percent = round((on_time / total * 100.0), 1) if total > 0 else 100.0
 
         # False closures in this ward
@@ -122,7 +129,9 @@ def get_sla_by_ward(db: Session = Depends(get_db)):
                 on_time=on_time,
                 breached=breached,
                 adherence_percent=adherence_percent,
-                false_closures=false_closures
+                false_closures=false_closures,
+                closed_late=closed_late,
+                overdue_open=overdue_open
             )
         )
 
@@ -168,6 +177,23 @@ def get_sla_by_category(db: Session = Depends(get_db)):
         )
 
     return results
+
+
+@router.get("/delay-reasons", response_model=List[DelayReasonStat])
+def get_delay_reasons(db: Session = Depends(get_db)):
+    """
+    Why complaints were closed after their deadline, most common first.
+    """
+    late = db.query(Resolution).filter(Resolution.closed_late.is_(True)).all()
+    counts = {reason: 0 for reason in DELAY_REASONS}
+    for r in late:
+        if r.delay_reason in counts:
+            counts[r.delay_reason] += 1
+    return sorted(
+        (DelayReasonStat(reason=k, count=v) for k, v in counts.items()),
+        key=lambda x: x.count,
+        reverse=True,
+    )
 
 
 @router.get("/false-closures", response_model=List[FalseClosureStat])

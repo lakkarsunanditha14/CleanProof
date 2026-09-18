@@ -14,7 +14,7 @@ BACKEND_DIR = PROJECT_ROOT / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 
 from app.database import engine, Base, SessionLocal
-from app.config import IMAGES_DIR, SLA_HOURS, VALID_WARDS, VALID_CATEGORIES
+from app.config import IMAGES_DIR, SLA_HOURS, VALID_WARDS, VALID_CATEGORIES, DELAY_REASONS
 from app.models import Complaint, Resolution, ReopenLog
 from app.services.exif_service import calculate_image_hash
 from app.services.sla_service import calculate_sla_info
@@ -73,6 +73,7 @@ def reset_demo_database():
     # Fix random seed for 100% reproducible background dataset
     random.seed(42)
 
+    delay_rng = random.Random(2026)  # separate stream so delay reasons do not shift other seeded data
     # 1. Wipe & Re-create DB tables
     print("1. Wiping & re-creating database tables...")
     Base.metadata.drop_all(bind=engine)
@@ -382,6 +383,13 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                 else:
                     res_dt = c_created + timedelta(hours=random.uniform(1, min(sla_h - 1, 20)))
 
+                # Closed after the deadline: record by how much and a (synthetic) reason
+                closed_late = res_dt > deadline
+                late_by_hours = round((res_dt - deadline).total_seconds() / 3600, 2) if closed_late else None
+                delay_reason = delay_rng.choices(
+                    DELAY_REASONS[:-1], weights=[45, 20, 12, 13, 10]
+                )[0] if closed_late else None
+
                 # Human review status
                 if verdict in ["SUSPICIOUS", "LIKELY FAKE"]:
                     h_rand = random.random()
@@ -423,6 +431,10 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                     exif_passed=(verdict == "VERIFIED"),
                     has_exif_metadata=(verdict == "VERIFIED"),
                     human_review_status=human_rev,
+                    closed_late=closed_late,
+                    late_by_hours=late_by_hours,
+                    delay_reason=delay_reason,
+                    delay_note=None,
                     created_at=res_dt
                 )
 

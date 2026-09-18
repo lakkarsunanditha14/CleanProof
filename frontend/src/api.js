@@ -52,6 +52,7 @@ export function formatHours(hours) {
   const totalMinutes = Math.round(Math.abs(hours) * 60);
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
+  if (h >= 48) return `${Math.floor(h / 24)}d ${h % 24}h`;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
