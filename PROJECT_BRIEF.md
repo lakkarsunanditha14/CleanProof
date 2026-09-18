@@ -11,10 +11,10 @@ photos with AI, detects fraud, and shows SLA adherence + hotspots on a dashboard
    blocked drain 48h. Status: On time / Near deadline / Breached
 3. Resolution + verification: when "after" photo is uploaded, run checks:
    - AI vision: local CLIP model zero-shot check (is the issue still present? yes/no + confidence)
-   - Same location: GPS distance between before/after < 50m
-   - Timestamp: after-photo time must be later than complaint time
-   - Duplicate: perceptual hash (imagehash) vs all previous after-photos
-   - Metadata: missing EXIF = suspicious
+   - Same location: GPS distance between before/after < 50m (-30 pts if > 50m or missing GPS)
+   - Timestamp: after-photo time must be later than complaint time (-20 pts)
+   - Duplicate: perceptual hash (imagehash) vs all previous after-photos (-30 pts)
+   - Metadata: missing EXIF = suspicious (-10 pts)
    Output: score 0-100 + verdict: VERIFIED / SUSPICIOUS / LIKELY FAKE + reasons list
 4. Citizen reopen: upload new photo to reopen a closed complaint
 5. Dashboard: Leaflet map with markers + heatmap, SLA adherence % by ward and category,

@@ -24,4 +24,13 @@ SLA_HOURS = {
 }
 
 VALID_CATEGORIES = list(SLA_HOURS.keys())
-VALID_WARDS = ["Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5"]
+VALID_WARDS = [
+    "Ameerpet",
+    "Kukatpally",
+    "Madhapur",
+    "Secunderabad",
+    "Dilsukhnagar",
+    "Mehdipatnam",
+    "Begumpet",
+    "LB Nagar"
+]

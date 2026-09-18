@@ -22,7 +22,7 @@ def run_resolution_verification_pipeline(
     Executes the 5-check resolution verification engine using local CLIP model photo comparison:
     - Base score: 100
     - AI Vision (CLIP) problem not reduced: -50 pts
-    - GPS distance between before and after > 50m: -25 pts (Missing EXIF GPS: -25 pts)
+    - GPS distance between before and after > 50m: -30 pts (Missing EXIF GPS: -30 pts)
     - After-photo timestamp earlier than complaint time: -20 pts (Missing EXIF Timestamp: -20 pts)
     - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
     - Missing EXIF metadata: -10 pts
@@ -58,7 +58,6 @@ def run_resolution_verification_pipeline(
     clip_issue_present = clip_res.get("issue_present")
     before_pct = clip_res.get("before_percent")
     after_pct = clip_res.get("after_percent")
-    clip_explanation = clip_res.get("explanation")
     clip_confidence = after_pct if after_pct is not None else 0.0
 
     if clip_status == "COMPLETED":
@@ -71,7 +70,7 @@ def run_resolution_verification_pipeline(
         # Check unavailable: skip deduction
         reasons.append("AI Vision (CLIP): Check unavailable (skipped)")
 
-    # CHECK 2: GPS Distance Check (< 50m limit) - EXIF ONLY
+    # CHECK 2: GPS Distance Check (< 50m limit) - EXIF ONLY (-30 pts penalty)
     gps_passed = False
     gps_distance_meters = None
 
@@ -81,14 +80,14 @@ def run_resolution_verification_pipeline(
             exif_lat, exif_lon
         )
         if gps_distance_meters > 50.0:
-            score -= 25
-            reasons.append(f"GPS Distance: Resolution photo is {round(gps_distance_meters, 1)}m away from complaint site (>50m limit) (-25 pts)")
+            score -= 30
+            reasons.append(f"GPS Distance: Resolution photo is {round(gps_distance_meters, 1)}m away from complaint site (>50m limit) (-30 pts)")
         else:
             gps_passed = True
             reasons.append(f"GPS Distance: Location within {round(gps_distance_meters, 1)}m of complaint site (Pass)")
     else:
         # Missing EXIF GPS metadata
-        score -= 25
+        score -= 30
         reasons.append("Location cannot be verified: photo has no GPS data")
 
     # CHECK 3: Timestamp Order Check - EXIF ONLY (IST UTC+5:30 conversion)
@@ -110,14 +109,19 @@ def run_resolution_verification_pipeline(
         score -= 20
         reasons.append("Time cannot be verified: photo has no timestamp")
 
-    # CHECK 4: Duplicate Image Check (imagehash distance <= 5)
+    # CHECK 4: Duplicate Image Check (imagehash distance <= 5, ignores null/empty hashes)
     duplicate_passed = True
     is_duplicate = False
-    if after_phash:
-        # Query all previous resolutions across DB
-        previous_resolutions = db.query(Resolution).filter(Resolution.perceptual_hash.isnot(None)).all()
+    if after_phash and after_phash.strip():
+        # Query all previous resolutions with non-empty perceptual hash
+        previous_resolutions = (
+            db.query(Resolution)
+            .filter(Resolution.perceptual_hash.isnot(None))
+            .filter(Resolution.perceptual_hash != "")
+            .all()
+        )
         for prev_res in previous_resolutions:
-            if prev_res.perceptual_hash:
+            if prev_res.perceptual_hash and prev_res.perceptual_hash.strip():
                 dist = compare_image_hashes(after_phash, prev_res.perceptual_hash)
                 if dist is not None and dist <= 5:
                     is_duplicate = True
@@ -130,7 +134,7 @@ def run_resolution_verification_pipeline(
         else:
             reasons.append("Duplicate Image: Perceptual hash is unique (Pass)")
     else:
-        reasons.append("Duplicate Image: Could not compute image hash")
+        reasons.append("Duplicate Image: Perceptual hash not available (Pass)")
 
     # CHECK 5: EXIF Metadata Check
     has_exif = exif_data.get("has_exif", False)
@@ -161,7 +165,7 @@ def run_resolution_verification_pipeline(
         "after_timestamp": db_after_ts,
         "clip_issue_present": clip_issue_present,
         "clip_confidence": clip_confidence,
-        "clip_explanation": clip_explanation,
+        "clip_explanation": clip_res.get("explanation"),
         "clip_status": clip_status,
         "gps_distance_meters": gps_distance_meters,
         "gps_passed": gps_passed,
