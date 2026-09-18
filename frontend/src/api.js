@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// Empty = same address as the page; the dev server passes /api and /static on to the backend.
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function fetchApi(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
