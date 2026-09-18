@@ -66,13 +66,19 @@ def _get_clip_model():
         print("Local CLIP model loaded successfully.")
     return _model, _processor
 
+# Added to every category, so scenes that are not a street (a table, a floor, a courtyard)
+# are still judged on litter vs clean instead of on "street or not".
+GENERAL_PROBLEM = ["wrappers, packets and litter lying on a surface", "rubbish and waste left on the ground"]
+GENERAL_CLEAN = ["a clean empty surface with nothing on it", "a clean empty table or floor"]
+
+
 def _get_labels_for_category(category: Optional[str] = None) -> Tuple[List[str], List[str]]:
     """Returns problem and clean labels for a given category, or combined set if unknown."""
     cat_key = category.lower().strip() if category else ""
     
     if cat_key in CATEGORY_LABEL_SETS:
         label_set = CATEGORY_LABEL_SETS[cat_key]
-        return label_set["problem"], label_set["clean"]
+        return label_set["problem"] + GENERAL_PROBLEM, label_set["clean"] + GENERAL_CLEAN
     
     # Unknown/all categories fallback
     all_problem = []
@@ -80,7 +86,7 @@ def _get_labels_for_category(category: Optional[str] = None) -> Tuple[List[str],
     for s in CATEGORY_LABEL_SETS.values():
         all_problem.extend(s["problem"])
         all_clean.extend(s["clean"])
-    return all_problem, all_clean
+    return all_problem + GENERAL_PROBLEM, all_clean + GENERAL_CLEAN
 
 # Also score 4 overlapping zoomed-in parts of the photo and keep the highest problem score,
 # so small or scattered litter that is lost in the full view is still noticed.
