@@ -30,4 +30,29 @@ export async function fetchApi(endpoint, options = {}) {
   return response.json();
 }
 
+// The backend stores absolute file paths and serves the files from /static/images.
+// Synthetic background complaints have no photo.
+export function imageUrl(path) {
+  if (!path || !/\.(jpe?g|png|webp)$/i.test(path)) return null;
+  return `${API_BASE_URL}/static/images/${path.split(/[\\/]/).pop()}`;
+}
+
+// Backend datetimes are UTC without a timezone suffix.
+export function parseUtc(value) {
+  if (!value) return null;
+  return new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
+}
+
+export function formatDateTime(value) {
+  const d = parseUtc(value);
+  return d ? d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+}
+
+export function formatHours(hours) {
+  const totalMinutes = Math.round(Math.abs(hours) * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export { API_BASE_URL };

@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import ReportPage from './pages/ReportPage';
+import TrackPage from './pages/TrackPage';
 
 export default function App() {
   return (
@@ -10,24 +12,8 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route
-            path="/report"
-            element={
-              <PlaceholderPage
-                title="Report Issue"
-                description="Submit a civic complaint with photo and location."
-              />
-            }
-          />
-          <Route
-            path="/track"
-            element={
-              <PlaceholderPage
-                title="Track Complaints"
-                description="Search and check status of existing complaints."
-              />
-            }
-          />
+          <Route path="/report" element={<ReportPage />} />
+          <Route path="/track" element={<TrackPage />} />
           <Route
             path="/worker"
             element={

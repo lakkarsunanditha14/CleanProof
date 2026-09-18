@@ -106,7 +106,7 @@ def run_resolution_verification_pipeline(
             if is_reopened and complaint.reopened_at:
                 reasons.append("Timestamp: After-photo was taken before the complaint was reopened (-20 pts)")
             else:
-                reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({complaint.created_at.strftime('%Y-%m-%d %H:%M')} UTC) (-20 pts)")
+                reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({(complaint.created_at + timedelta(hours=5, minutes=30)).strftime('%Y-%m-%d %H:%M')} IST) (-20 pts)")
         else:
             timestamp_passed = True
             reasons.append("Timestamp: After-photo timestamp is later than complaint time (Pass)")
