@@ -40,3 +40,6 @@ frontend/certs/
 # Downloaded tools (cloudflared for the public demo link)
 tools/
 CleanProof_phone_QR.png
+
+# Third-party datasets downloaded for testing (e.g. TACO, CC BY 4.0)
+data/datasets/
