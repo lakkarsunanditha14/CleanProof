@@ -1,4 +1,7 @@
-"""Upload CleanProof to a Hugging Face Space (Docker) for a permanent public link.
+"""Upload CleanProof to a Hugging Face Space (Docker) for an always-on public link.
+
+Note: Hugging Face now requires a PRO subscription (or a paid organization plan) to run Docker
+Spaces. Without it, use scripts/permanent_link.py (free forwarding page) with the laptop running.
 
 One-time setup: log in with your own access token (typed into the terminal, never shared):
     backend\\venv\\Scripts\\hf.exe auth login
@@ -12,7 +15,7 @@ from pathlib import Path
 from huggingface_hub import HfApi
 
 ROOT = Path(__file__).resolve().parents[1]
-SPACE_OWNER = "cleanproof-team"  # organization; set to None to use your own username
+SPACE_OWNER = None  # your own account (organizations need a paid plan for Docker Spaces)
 SPACE_NAME = "cleanproof"
 
 # Local-only or generated files that must not be uploaded

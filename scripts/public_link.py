@@ -1,7 +1,8 @@
 """Start a Cloudflare quick tunnel to the local app and show a QR code for phones.
 
-The public https link works on any network (Wi-Fi or mobile data) and for anyone who has it,
-as long as this window stays open. The link changes every time this script starts.
+The tunnel link changes on every start, so the permanent link (a free static Hugging Face Space,
+see permanent_link.py) is updated to forward to it. People always use the permanent link.
+Works on any network (Wi-Fi or mobile data) while this window stays open.
 """
 import os
 import re
@@ -53,10 +54,17 @@ def main() -> None:
                 match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
                 if match:
                     url = match.group(0)
-                    save_qr(url)
+                    share = url
+                    try:
+                        from permanent_link import update_permanent_link
+                        share = update_permanent_link(url)
+                    except Exception as err:  # not logged in to Hugging Face, or offline
+                        print(f"(Permanent link not updated: {err}. Sharing the tunnel link instead.)")
+                    save_qr(share)
                     print("\n" + "=" * 70)
-                    print(f"  PUBLIC LINK:  {url}")
-                    print(f"  QR code:      {QR_FILE}")
+                    print(f"  SHARE THIS LINK:  {share}")
+                    print(f"  (tunnel: {url})")
+                    print(f"  QR code:          {QR_FILE}")
                     print("  Works on any phone, any network. Keep this window open.")
                     print("=" * 70 + "\n")
                     os.startfile(QR_FILE)
