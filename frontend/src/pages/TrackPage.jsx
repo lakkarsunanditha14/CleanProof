@@ -160,9 +160,9 @@ export default function TrackPage() {
           <Card className="space-y-5">
             <h3 className="font-bold text-slate-900">Photos</h3>
             <div className="grid sm:grid-cols-2 gap-5">
-              <Photo label="Before (citizen)" path={complaint.before_image_path} tone="amber" />
+              <Photo label="Before (citizen)" path={complaint.before_image_path} tone="amber" category={complaint.category} />
               {res ? (
-                <Photo label={`After (worker, ${formatDateTime(res.created_at)})`} path={res.after_image_path} tone="green" />
+                <Photo label={`After (worker, ${formatDateTime(res.created_at)})`} path={res.after_image_path} tone="green" category={complaint.category} />
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">After (worker)</p>

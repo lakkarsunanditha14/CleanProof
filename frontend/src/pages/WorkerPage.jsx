@@ -9,7 +9,7 @@ import StatusBadge from '../components/StatusBadge';
 import SlaBadge from '../components/SlaBadge';
 import VerdictBadge from '../components/VerdictBadge';
 import EmptyState from '../components/EmptyState';
-import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
+import { ReasonList, ScoreHeader, Photo, CategoryArt } from '../components/Verification';
 import { WARDS, DELAY_REASONS, categoryLabel } from '../constants';
 import { fetchApi, imageUrl, parseUtc, formatHours, formatDateTime } from '../api';
 
@@ -81,7 +81,7 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
 
         <div className="p-6 space-y-6">
           <div className="grid sm:grid-cols-2 gap-5">
-            <Photo label="Before (citizen)" path={complaint.before_image_path} tone="amber" />
+            <Photo label="Before (citizen)" path={complaint.before_image_path} tone="amber" category={complaint.category} />
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">After (your photo)</p>
               <label className={`block ${result ? '' : 'cursor-pointer'}`}>
@@ -261,7 +261,7 @@ export default function WorkerPage() {
                 {img ? (
                   <img src={img} alt="" className="w-full aspect-[16/9] object-cover" />
                 ) : (
-                  <div className="w-full aspect-[16/9] bg-slate-100 flex items-center justify-center text-xs text-slate-400">No photo (synthetic record)</div>
+                  <CategoryArt category={c.category} className="aspect-[16/9]" />
                 )}
                 <div className="p-5 flex flex-col gap-3 flex-1">
                   <div className="flex items-center justify-between gap-2">
