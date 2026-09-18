@@ -58,14 +58,20 @@ function Kpi({ icon: Icon, label, value, note, color }) {
   );
 }
 
-function ChartCard({ title, subtitle, children, height = 300 }) {
+function ChartCard({ title, subtitle, children, height = 300, empty }) {
   return (
     <Card className="space-y-4">
       <div>
         <h3 className="font-bold text-slate-900">{title}</h3>
         {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
-      <div style={{ height }}>{children}</div>
+      {empty ? (
+        <div style={{ height }} className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-500 text-center px-6">
+          {empty}
+        </div>
+      ) : (
+        <div style={{ height }}>{children}</div>
+      )}
     </Card>
   );
 }
@@ -145,6 +151,7 @@ export default function DashboardPage() {
 
       {data && derived && (
         <>
+          {derived.synthetic > 0 && (
           <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-slate-700">
             <Info className="w-5 h-5 shrink-0 text-sky-700 mt-0.5" />
             <p>
@@ -155,6 +162,7 @@ export default function DashboardPage() {
               reported during this demo.
             </p>
           </div>
+          )}
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi icon={FileText} label="Complaints" value={data.stats.total_complaints} note={`${data.stats.active_complaints} open, ${data.stats.resolved_complaints} closed`} color={INK} />
@@ -249,7 +257,8 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Suspected fake closures by ward" subtitle="Closures flagged by verification and not cleared by a reviewer.">
+            <ChartCard title="Suspected fake closures by ward" subtitle="Closures flagged by verification and not cleared by a reviewer."
+            empty={derived.byFalse.every((w) => w.false_closures === 0) && 'No suspected fake closures yet. Upload a fake after photo on the Worker page to see it appear here.'}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={derived.byFalse} layout="vertical" margin={{ top: 4, right: 40, left: 8, bottom: 4 }}>
                   <CartesianGrid horizontal={false} stroke={GRID} />
@@ -279,7 +288,8 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Why deadlines were missed" subtitle="Reason the worker gave when closing a complaint after its deadline." height={280}>
+          <ChartCard title="Why deadlines were missed" subtitle="Reason the worker gave when closing a complaint after its deadline." height={280}
+            empty={derived.delays.every((d) => d.count === 0) && 'No complaints closed late yet. Resolve an overdue complaint with a delay reason to see it here.'}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={derived.delays} layout="vertical" margin={{ top: 4, right: 36, left: 8, bottom: 4 }}>
                 <CartesianGrid horizontal={false} stroke={GRID} />

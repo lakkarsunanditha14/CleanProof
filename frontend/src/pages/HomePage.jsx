@@ -177,7 +177,7 @@ export default function HomePage() {
               <div className="text-3xl font-extrabold text-slate-900 tracking-tight">
                 {stats?.total_complaints ?? 0}
               </div>
-              <p className="text-xs text-slate-500 mt-2">Across 8 municipal wards</p>
+              <p className="text-xs text-slate-500 mt-2">Reported by citizens</p>
             </Card>
 
             {/* SLA Adherence */}

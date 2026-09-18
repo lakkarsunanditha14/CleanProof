@@ -39,8 +39,9 @@ STEP 7  Live camera (the answer to "what if the worker uploads an old photo?")
   (Allow camera and location in Chrome when asked. Uses the laptop webcam.)
 
 STEP 8  Dashboard
-  Show the hotspots: Dilsukhnagar (fake closures) and Kukatpally (missed deadlines)
-  and the "Why deadlines were missed" chart
+  Everything you just did is on it: suspected fake closures by ward (Kukatpally, Mehdipatnam,
+  Dilsukhnagar), the late closure and its reason, the map and the review queue count.
+  (Only real, live complaints are shown. Run reset_demo.py --with-history for 194 synthetic past ones.)
 
 Other files: genuine_after_2..6.jpg are genuine clean-ups for complaints #2..#6.
 Only upload to complaints #1..#6. The other complaints are synthetic history with

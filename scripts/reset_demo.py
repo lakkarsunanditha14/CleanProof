@@ -294,8 +294,9 @@ STEP 7  Live camera (the answer to "what if the worker uploads an old photo?")
   (Allow camera and location in Chrome when asked. Uses the laptop webcam.)
 
 STEP 8  Dashboard
-  Show the hotspots: Dilsukhnagar (fake closures) and Kukatpally (missed deadlines)
-  and the "Why deadlines were missed" chart
+  Everything you just did is on it: suspected fake closures by ward (Kukatpally, Mehdipatnam,
+  Dilsukhnagar), the late closure and its reason, the map and the review queue count.
+  (Only real, live complaints are shown. Run reset_demo.py --with-history for 194 synthetic past ones.)
 
 Other files: genuine_after_2..6.jpg are genuine clean-ups for complaints #{ids[1]}..#{ids[5]}.
 Only upload to complaints #{ids[0]}..#{ids[5]}. The other complaints are synthetic history with
@@ -307,7 +308,10 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
             f.write(readme_content)
 
         # 4. Generate ~200 BACKGROUND complaints for dashboard analytics
-        print("4. Generating ~200 synthetic background complaints across 8 wards...")
+        # By default only the 6 live demo complaints are created, so everything on screen is real.
+        # Run with --with-history to also add 194 synthetic past complaints for a city-scale dashboard.
+        total_bg = 194 if "--with-history" in sys.argv else 0
+        print(f"4. Synthetic history: {total_bg} complaints" + ("" if total_bg else " (live complaints only; add --with-history for 194 synthetic past complaints)"))
 
         sample_titles = {
             "garbage dump": [
@@ -343,13 +347,12 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
         wards_list = list(WARD_CENTRES.keys())
         hotspot_wards = ["Kukatpally", "Dilsukhnagar"]
 
-        total_bg = 194  # 194 bg + 6 live = 200 total complaints
 
         # Sample photos for history records, matched by category. Copies are named history_*
         # so the UI can tag them as samples. History resolutions keep a NULL perceptual hash,
         # so these copies never trigger the duplicate check on live uploads.
         history_pairs = {"garbage dump": [1, 5, 6], "blocked drain": [2], "construction debris": [3], "unswept street": [4]}
-        for n in range(1, 7):
+        for n in (range(1, 7) if total_bg else []):
             for kind, folder in (("before", demo_before_dir), ("after", demo_after_dir)):
                 src = next(folder.glob(f"{kind}_{n}.*"))
                 convert_to_jpeg(src, IMAGES_DIR / f"history_{kind}_{n}.jpg")
