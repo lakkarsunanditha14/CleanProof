@@ -50,7 +50,7 @@ def seed_database():
                 "after_label": "AFTER: Cleaned Street Sector 4",
                 "verdict": "VERIFIED",
                 "score": 90,
-                "reasons": ["Gemini Vision: Issue confirmed resolved (Pass)", "GPS Distance: Location within 12m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash is unique (Pass)", "EXIF Metadata: Original camera EXIF metadata present (Pass)"],
+                "reasons": ["AI Vision (CLIP): area looks clean (confidence 92.5%)", "GPS Distance: Location within 12m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash is unique (Pass)", "EXIF Metadata: Original camera EXIF metadata present (Pass)"],
                 "after_dist_m": 12.0
             },
             # 2. Ward 2 - Unswept Street - Resolved (SUSPICIOUS - Location mismatch)
@@ -66,7 +66,7 @@ def seed_database():
                 "after_label": "AFTER: Cleaned Park (Wrong Location)",
                 "verdict": "SUSPICIOUS",
                 "score": 65,
-                "reasons": ["Gemini Vision: Issue confirmed resolved (Pass)", "GPS Distance: Resolution photo is 120m away from complaint site (>50m limit) (-25 pts)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash is unique (Pass)", "EXIF Metadata: Missing camera/EXIF metadata (-10 pts)"],
+                "reasons": ["AI Vision (CLIP): area looks clean (confidence 88.0%)", "GPS Distance: Resolution photo is 120m away from complaint site (>50m limit) (-25 pts)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash is unique (Pass)", "EXIF Metadata: Missing camera/EXIF metadata (-10 pts)"],
                 "after_dist_m": 120.0
             },
             # 3. Ward 3 - Construction Debris - Resolved (LIKELY FAKE - Issue still present + Duplicate image)
@@ -82,7 +82,7 @@ def seed_database():
                 "after_label": "AFTER: Debris Still Present Fake",
                 "verdict": "LIKELY FAKE",
                 "score": 20,
-                "reasons": ["Gemini Vision: AI analysis indicates issue is STILL PRESENT in resolution photo (-50 pts)", "GPS Distance: Location within 8m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual image hash matches a previously submitted resolution photo (-30 pts)", "EXIF Metadata: Missing camera/EXIF metadata (-10 pts)"],
+                "reasons": ["AI Vision (CLIP): issue still visible (confidence 85.0%) (-50 pts)", "GPS Distance: Location within 8m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual image hash matches a previously submitted resolution photo (-30 pts)", "EXIF Metadata: Missing camera/EXIF metadata (-10 pts)"],
                 "after_dist_m": 8.0
             },
             # 4. Ward 4 - Blocked Drain - Open (Near Deadline)
@@ -111,7 +111,7 @@ def seed_database():
                 "reopen_label": "REOPEN: Trash dumped again same spot",
                 "verdict": "SUSPICIOUS",
                 "score": 60,
-                "reasons": ["Gemini Vision: Issue confirmed resolved (Pass)", "GPS Distance: Location within 45m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash matches a previously submitted photo (-30 pts)", "EXIF Metadata: Original camera EXIF metadata present (Pass)"],
+                "reasons": ["AI Vision (CLIP): area looks clean (confidence 80.0%)", "GPS Distance: Location within 45m of complaint site (Pass)", "Timestamp: After-photo timestamp is later than complaint time (Pass)", "Duplicate Image: Perceptual hash matches a previously submitted photo (-30 pts)", "EXIF Metadata: Original camera EXIF metadata present (Pass)"],
                 "after_dist_m": 45.0
             }
         ]
@@ -148,7 +148,6 @@ def seed_database():
 
             if s["after_label"]:
                 after_file = f"seed_after_{idx}.jpg"
-                # Color variation for contrast
                 after_color = (50, 150, 50) if s["verdict"] == "VERIFIED" else (150, 120, 40)
                 after_path = create_synthetic_image(after_file, after_color, s["after_label"], add_exif=(s["verdict"] == "VERIFIED"))
                 after_hash = calculate_image_hash(after_path)
@@ -164,10 +163,10 @@ def seed_database():
                     score=s["score"],
                     verdict=s["verdict"],
                     reasons=s["reasons"],
-                    gemini_is_resolved=(s["verdict"] == "VERIFIED"),
-                    gemini_confidence=0.9,
-                    gemini_explanation="Synthetic seed analysis.",
-                    gemini_status="COMPLETED",
+                    clip_issue_present=(s["verdict"] != "VERIFIED"),
+                    clip_confidence=85.0 if s["verdict"] != "VERIFIED" else 92.5,
+                    clip_explanation="Synthetic seed CLIP analysis.",
+                    clip_status="COMPLETED",
                     gps_distance_meters=s["after_dist_m"],
                     gps_passed=(s["after_dist_m"] <= 50.0),
                     timestamp_passed=True,

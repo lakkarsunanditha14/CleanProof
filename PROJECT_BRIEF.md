@@ -10,7 +10,7 @@ photos with AI, detects fraud, and shows SLA adherence + hotspots on a dashboard
 2. SLA clock per category: garbage dump 12h, unswept street 24h, construction debris 72h,
    blocked drain 48h. Status: On time / Near deadline / Breached
 3. Resolution + verification: when "after" photo is uploaded, run checks:
-   - Gemini vision: is the issue still present? (yes/no + confidence)
+   - AI vision: local CLIP model zero-shot check (is the issue still present? yes/no + confidence)
    - Same location: GPS distance between before/after < 50m
    - Timestamp: after-photo time must be later than complaint time
    - Duplicate: perceptual hash (imagehash) vs all previous after-photos
@@ -23,8 +23,8 @@ photos with AI, detects fraud, and shows SLA adherence + hotspots on a dashboard
 ## Tech stack (do NOT change)
 - Frontend: React + Vite + Tailwind CSS + Leaflet (react-leaflet) + Recharts
 - Backend: Python FastAPI + SQLite (SQLAlchemy)
-- AI: Google Gemini API (key in backend/.env as GEMINI_API_KEY)
-- Image libs: Pillow, imagehash, piexif
+- AI: Local CLIP Vision Model (openai/clip-vit-base-patch32, no API key required)
+- Image libs: Pillow, imagehash, piexif, transformers, torch
 - Folders: /backend, /frontend, /data (images), /scripts
 
 ## Rules
@@ -33,4 +33,4 @@ photos with AI, detects fraud, and shows SLA adherence + hotspots on a dashboard
 - Do not impersonate the official Swachhata app; use our own name and branding
 - Clean, modern, professional UI (not childish). Mobile-friendly complaint form
 - Keep code simple and readable. Do not add features not listed here
-- Never hardcode the API key
+- Never hardcode API keys or credentials

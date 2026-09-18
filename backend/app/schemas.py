@@ -20,10 +20,10 @@ class ResolutionResponse(BaseModel):
     score: int
     verdict: str
     reasons: List[str]
-    gemini_is_resolved: Optional[bool] = None
-    gemini_confidence: Optional[float] = None
-    gemini_explanation: Optional[str] = None
-    gemini_status: str
+    clip_issue_present: Optional[bool] = None
+    clip_confidence: Optional[float] = None
+    clip_explanation: Optional[str] = None
+    clip_status: str
     gps_distance_meters: Optional[float] = None
     gps_passed: Optional[bool] = None
     timestamp_passed: Optional[bool] = None

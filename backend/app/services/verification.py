@@ -8,7 +8,7 @@ from app.services.exif_service import (
     haversine_distance,
     extract_exif_metadata
 )
-from app.services.gemini_service import analyze_complaint_resolution_with_gemini
+from app.services.clip_service import analyze_resolution_with_clip
 
 def run_resolution_verification_pipeline(
     db: Session,
@@ -19,14 +19,13 @@ def run_resolution_verification_pipeline(
     after_timestamp_input: Optional[datetime] = None
 ) -> Dict[str, Any]:
     """
-    Executes the 5-check resolution verification engine using EXACT scoring rules:
-    - Verification uses ONLY EXIF data for GPS and timestamp checks.
+    Executes the 5-check resolution verification engine using local CLIP model:
     - Base score: 100
-    - Gemini says issue still present: -50
-    - GPS distance between before and after > 50m: -25 (Missing EXIF GPS: -25)
-    - After-photo timestamp earlier than complaint time: -20 (Missing EXIF Timestamp: -20)
-    - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30
-    - Missing EXIF metadata: -10
+    - AI Vision (CLIP) issue still visible: -50 pts
+    - GPS distance between before and after > 50m: -25 pts (Missing EXIF GPS: -25 pts)
+    - After-photo timestamp earlier than complaint time: -20 pts (Missing EXIF Timestamp: -20 pts)
+    - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
+    - Missing EXIF metadata: -10 pts
     - Minimum score: 0
     - Verdict: >= 75 VERIFIED, 40-74 SUSPICIOUS, < 40 LIKELY FAKE
     - Always returns reasons list in plain English.
@@ -48,28 +47,23 @@ def run_resolution_verification_pipeline(
     db_after_lon = after_longitude_input or exif_lon
     db_after_ts = after_timestamp_input or exif_ts or datetime.utcnow()
 
-    # CHECK 1: Gemini Vision Analysis
-    gemini_res = analyze_complaint_resolution_with_gemini(
-        before_image_path=complaint.before_image_path,
-        after_image_path=after_image_path,
-        category=complaint.category,
-        description=complaint.description
-    )
+    # CHECK 1: Local CLIP Vision Analysis
+    clip_res = analyze_resolution_with_clip(after_image_path)
 
-    gemini_status = gemini_res.get("status", "UNAVAILABLE")
-    gemini_is_resolved = gemini_res.get("is_resolved")
-    gemini_confidence = gemini_res.get("confidence")
-    gemini_explanation = gemini_res.get("explanation")
+    clip_status = clip_res.get("status", "UNAVAILABLE")
+    clip_issue_present = clip_res.get("issue_present")
+    clip_confidence = clip_res.get("confidence")
+    clip_explanation = clip_res.get("explanation")
 
-    if gemini_status == "COMPLETED":
-        if gemini_is_resolved is False:
+    if clip_status == "COMPLETED":
+        if clip_issue_present is True:
             score -= 50
-            reasons.append("Gemini Vision: AI analysis indicates issue is STILL PRESENT in resolution photo (-50 pts)")
+            reasons.append(f"AI Vision (CLIP): issue still visible (confidence {clip_confidence}%)")
         else:
-            reasons.append(f"Gemini Vision: Confirmed issue appears resolved ({gemini_explanation}) (Pass)")
+            reasons.append(f"AI Vision (CLIP): area looks clean (confidence {clip_confidence}%)")
     else:
         # Check unavailable: skip deduction
-        reasons.append("Gemini Vision: Check unavailable (skipped)")
+        reasons.append("AI Vision (CLIP): Check unavailable (skipped)")
 
     # CHECK 2: GPS Distance Check (< 50m limit) - EXIF ONLY
     gps_passed = False
@@ -159,10 +153,10 @@ def run_resolution_verification_pipeline(
         "after_latitude": db_after_lat,
         "after_longitude": db_after_lon,
         "after_timestamp": db_after_ts,
-        "gemini_is_resolved": gemini_is_resolved,
-        "gemini_confidence": gemini_confidence,
-        "gemini_explanation": gemini_explanation,
-        "gemini_status": gemini_status,
+        "clip_issue_present": clip_issue_present,
+        "clip_confidence": clip_confidence,
+        "clip_explanation": clip_explanation,
+        "clip_status": clip_status,
         "gps_distance_meters": gps_distance_meters,
         "gps_passed": gps_passed,
         "timestamp_passed": timestamp_passed,

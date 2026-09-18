@@ -41,10 +41,10 @@ class Resolution(Base):
     verdict = Column(String(50), nullable=False) # 'VERIFIED', 'SUSPICIOUS', 'LIKELY FAKE'
     reasons = Column(JSON, nullable=False, default=list)
 
-    gemini_is_resolved = Column(Boolean, nullable=True)
-    gemini_confidence = Column(Float, nullable=True)
-    gemini_explanation = Column(Text, nullable=True)
-    gemini_status = Column(String(50), default="COMPLETED") # 'COMPLETED', 'UNAVAILABLE'
+    clip_issue_present = Column(Boolean, nullable=True)
+    clip_confidence = Column(Float, nullable=True)
+    clip_explanation = Column(Text, nullable=True)
+    clip_status = Column(String(50), default="COMPLETED") # 'COMPLETED', 'UNAVAILABLE'
 
     gps_distance_meters = Column(Float, nullable=True)
     gps_passed = Column(Boolean, nullable=True)

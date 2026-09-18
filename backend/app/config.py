@@ -7,8 +7,7 @@ backend_dir = Path(__file__).resolve().parent.parent
 env_path = backend_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
+CLIP_THRESHOLD = float(os.getenv("CLIP_THRESHOLD", "0.5"))
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./resolved_allegedly.db")
 
 # Image directory path (absolute path to data/images)
