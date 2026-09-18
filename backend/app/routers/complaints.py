@@ -235,6 +235,7 @@ async def resolve_complaint(
     delay_reason: Optional[str] = Form(None),
     delay_note: Optional[str] = Form(None),
     capture_mode: Optional[str] = Form(None),
+    street: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -326,7 +327,7 @@ async def resolve_complaint(
         stamp_photo(file_path, stamped, [
             f"CleanProof  |  LIVE CAPTURE  |  Complaint #{complaint.id}  |  {complaint.ward}",
             (closed_at + timedelta(hours=5, minutes=30)).strftime("%d %b %Y, %H:%M:%S IST") + "  (server time)",
-            f"{complaint.ward} ward  |  {round(dist)} m from the registered complaint spot" if lat is not None
+            f"{(street.strip()[:60] + ', ') if street and street.strip() else ''}{complaint.ward} ward  |  {round(dist)} m from the registered complaint spot" if lat is not None
             else f"{complaint.ward} ward  |  location not shared",
         ])
         resolution.after_image_path = str(stamped.resolve()).replace("\\", "/")

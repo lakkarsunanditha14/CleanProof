@@ -5,6 +5,19 @@ import { WARDS } from '../constants';
 
 // Where the photo is, from measured facts only: distance to the nearest known ward centre.
 // (No place-name lookup: map boundaries can name the wrong village or mandal.)
+// Street name from OpenStreetMap, only when the GPS fix is precise enough (phone GPS, not
+// Wi-Fi/laptop location), so a wrong street is never shown. Only the road name is used.
+const STREET_MAX_ACCURACY_M = 30;
+
+async function streetName(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=en&lat=${lat}&lon=${lng}`);
+    return (await res.json()).address?.road || '';
+  } catch {
+    return '';
+  }
+}
+
 function nearestWard(lat, lng) {
   const km = (w) => Math.hypot((w.lat - lat) * 111, (w.lng - lng) * 111 * Math.cos((lat * Math.PI) / 180));
   const nearest = [...WARDS].sort((x, y) => km(x) - km(y))[0];
@@ -18,6 +31,13 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
   const [error, setError] = useState('');
   const [location, setLocation] = useState({ state: 'pending' });
   const [now, setNow] = useState(() => new Date());
+  const [street, setStreet] = useState('');
+
+  useEffect(() => {
+    if (location.state === 'ok' && location.accuracy <= STREET_MAX_ACCURACY_M) {
+      streetName(location.lat, location.lng).then(setStreet);
+    }
+  }, [location]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -72,6 +92,7 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
         url: URL.createObjectURL(blob),
         lat: location.state === 'ok' ? location.lat : null,
         lng: location.state === 'ok' ? location.lng : null,
+        street,
       });
     }, 'image/jpeg', 0.9);
   }
@@ -97,7 +118,7 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
           </p>
           <p>{now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} IST</p>
           <p>
-            {location.state === 'ok' && `${nearestWard(location.lat, location.lng)}, GPS accuracy ±${Math.round(location.accuracy)} m`}
+            {location.state === 'ok' && `${street ? `${street}, ` : ''}${nearestWard(location.lat, location.lng)}, GPS accuracy ±${Math.round(location.accuracy)} m`}
             {location.state === 'pending' && 'GPS: locating...'}
             {location.state === 'failed' && 'GPS: not available'}
           </p>

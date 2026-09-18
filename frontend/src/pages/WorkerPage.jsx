@@ -44,10 +44,10 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
     setLive(null);
   }
 
-  function handleCapture({ file, url, lat, lng }) {
+  function handleCapture({ file, url, lat, lng, street }) {
     setPhoto(file);
     setPreview(url);
-    setLive({ lat, lng });
+    setLive({ lat, lng, street });
     setCameraOpen(false);
   }
 
@@ -67,6 +67,7 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
     form.append('photo', photo);
     if (live) {
       form.append('capture_mode', 'live');
+      if (live.street) form.append('street', live.street);
       if (live.lat != null) {
         form.append('latitude', live.lat);
         form.append('longitude', live.lng);
