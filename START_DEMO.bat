@@ -2,6 +2,8 @@
 rem Starts CleanProof for a demo: fresh demo data, backend, frontend and a public link for phones.
 rem Close the three windows it opens to stop everything.
 cd /d "%~dp0"
+rem Make sure Node.js is found even if Windows has not refreshed PATH since it was installed
+set "PATH=C:\Program Files\nodejs;%PATH%"
 
 choice /c YN /n /t 10 /d N /m "Reset demo data? This DELETES all complaints reported so far. Y = reset, N = keep (auto N in 10s): "
 if errorlevel 2 goto keepdata
