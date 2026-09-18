@@ -9,9 +9,9 @@ import StatusBadge from '../components/StatusBadge';
 import SlaBadge from '../components/SlaBadge';
 import VerdictBadge from '../components/VerdictBadge';
 import EmptyState from '../components/EmptyState';
-import { ReasonList, ScoreHeader, Photo, CategoryArt } from '../components/Verification';
+import { ReasonList, ScoreHeader, Photo, CategoryArt, SampleTag } from '../components/Verification';
 import { WARDS, DELAY_REASONS, categoryLabel } from '../constants';
-import { fetchApi, imageUrl, parseUtc, formatHours, formatDateTime } from '../api';
+import { fetchApi, imageUrl, isSamplePhoto, parseUtc, formatHours, formatDateTime } from '../api';
 
 const TABS = [
   { key: 'due', label: 'Due' },
@@ -259,7 +259,10 @@ export default function WorkerPage() {
             return (
               <Card key={c.id} hover padding="p-0" className="overflow-hidden flex flex-col">
                 {img ? (
-                  <img src={img} alt="" className="w-full aspect-[16/9] object-cover" />
+                  <div className="relative">
+                    <img src={img} alt="" loading="lazy" className="w-full aspect-[16/9] object-cover" />
+                    {isSamplePhoto(c.before_image_path) && <SampleTag />}
+                  </div>
                 ) : (
                   <CategoryArt category={c.category} className="aspect-[16/9]" />
                 )}

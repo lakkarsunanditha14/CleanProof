@@ -31,10 +31,14 @@ export async function fetchApi(endpoint, options = {}) {
 }
 
 // The backend stores absolute file paths and serves the files from /static/images.
-// Synthetic background complaints have no photo.
 export function imageUrl(path) {
   if (!path || !/\.(jpe?g|png|webp)$/i.test(path)) return null;
   return `${API_BASE_URL}/static/images/${path.split(/[\\/]/).pop()}`;
+}
+
+// Synthetic history records use sample photos (history_*.jpg), which the UI tags as samples.
+export function isSamplePhoto(path) {
+  return /(^|[\\/])history_[^\\/]*$/.test(path || '');
 }
 
 // Backend datetimes are UTC without a timezone suffix.

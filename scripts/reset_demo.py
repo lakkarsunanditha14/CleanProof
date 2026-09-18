@@ -338,11 +338,24 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
 
         total_bg = 194  # 194 bg + 6 live = 200 total complaints
 
+        # Sample photos for history records, matched by category. Copies are named history_*
+        # so the UI can tag them as samples. History resolutions keep a NULL perceptual hash,
+        # so these copies never trigger the duplicate check on live uploads.
+        history_pairs = {"garbage dump": [1, 5, 6], "blocked drain": [2], "construction debris": [3], "unswept street": [4]}
+        for n in range(1, 7):
+            for kind, folder in (("before", demo_before_dir), ("after", demo_after_dir)):
+                src = next(folder.glob(f"{kind}_{n}.*"))
+                convert_to_jpeg(src, IMAGES_DIR / f"history_{kind}_{n}.jpg")
+
+        def history_photo(kind, n):
+            return str((IMAGES_DIR / f"history_{kind}_{n}.jpg").resolve()).replace("\\", "/")
+
         for bg_i in range(1, total_bg + 1):
             ward = random.choice(wards_list)
             is_hotspot = ward in hotspot_wards
 
             category = random.choice(VALID_CATEGORIES)
+            pair_n = history_pairs[category][bg_i % len(history_pairs[category])]
             title = random.choice(sample_titles[category])
             
             # Lat/Lng within ~1.5km of ward center
@@ -377,7 +390,7 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                 ward=ward,
                 latitude=lat,
                 longitude=lon,
-                before_image_path="synthetic_bg",
+                before_image_path=history_photo("before", pair_n),
                 before_image_hash=None, # NULL so it never interferes with live duplicate checks
                 before_has_exif=True,
                 status=c_status,
@@ -445,7 +458,8 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                 reasons_list = history_reasons(failed)
                 bg_res = Resolution(
                     complaint_id=bg_complaint.id,
-                    after_image_path="synthetic_bg_after",
+                    # "Problem not reduced" closures show the still-dirty photo, others the clean one
+                    after_image_path=history_photo("before" if "clip" in failed else "after", pair_n),
                     after_latitude=lat,
                     after_longitude=lon,
                     after_timestamp=res_dt,

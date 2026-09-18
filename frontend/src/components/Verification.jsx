@@ -1,8 +1,16 @@
 import React from 'react';
 import { CheckCircle2, XCircle, MinusCircle, ImageOff, Trash2, Droplets, BrickWall, Leaf, History } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
-import { imageUrl } from '../api';
+import { imageUrl, isSamplePhoto } from '../api';
 import { categoryLabel } from '../constants';
+
+export function SampleTag() {
+  return (
+    <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-sm">
+      <History className="w-3 h-3" /> Sample photo, synthetic history
+    </span>
+  );
+}
 
 // Shown instead of a photo for synthetic history records, which never had photos.
 const CATEGORY_ART = {
@@ -87,8 +95,9 @@ export function Photo({ label, path, tone = 'slate', src, category }) {
     <figure className="space-y-2">
       {label && <figcaption className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</figcaption>}
       {url ? (
-        <a href={url} target="_blank" rel="noreferrer">
-          <img src={url} alt={label || 'Photo'} className={`w-full aspect-[4/3] object-cover rounded-xl border-2 ${ring}`} />
+        <a href={url} target="_blank" rel="noreferrer" className="relative block">
+          <img src={url} alt={label || 'Photo'} loading="lazy" className={`w-full aspect-[4/3] object-cover rounded-xl border-2 ${ring}`} />
+          {isSamplePhoto(path) && <SampleTag />}
         </a>
       ) : (
         <CategoryArt category={category} />
