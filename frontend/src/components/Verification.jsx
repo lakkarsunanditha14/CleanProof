@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, XCircle, MinusCircle, ImageOff, Trash2, Droplets, BrickWall, Leaf, History, Camera, Upload, MapPin, Fingerprint, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, MinusCircle, ImageOff, Trash2, Droplets, BrickWall, Leaf, History, Camera, Upload, MapPin, Fingerprint, AlertTriangle, Radio } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
 import { imageUrl, isSamplePhoto, parseUtc, formatDateTime, formatHours } from '../api';
 import { categoryLabel } from '../constants';
@@ -154,9 +154,18 @@ export function PhotoEvidence({ resolution: r, complaintCreatedAt, reopenedAt })
     takenTone = 'good';
   }
 
+  const live = r.capture_method === 'live';
+  if (live && taken) {
+    takenNote = `Captured live in the app, time set by the server (${formatHours(hours(taken, start))} after the complaint was ${startWord})`;
+    takenTone = 'good';
+  }
+
   let uploadNote = 'Photo age unknown';
   let uploadTone = 'bad';
-  if (taken) {
+  if (live) {
+    uploadNote = 'Sent straight from the in-app camera at the moment of capture';
+    uploadTone = 'good';
+  } else if (taken) {
     const age = Math.max(0, hours(uploaded, taken));
     uploadTone = age > 24 ? 'warn' : 'good';
     uploadNote = age > 24
@@ -167,7 +176,7 @@ export function PhotoEvidence({ resolution: r, complaintCreatedAt, reopenedAt })
   const hasGps = r.photo_latitude != null;
   const dist = r.gps_distance_meters;
   const near = hasGps && dist != null && dist <= 50;
-  let placeNote = 'No GPS inside the photo';
+  let placeNote = live ? 'Location was not shared during the live capture' : 'No GPS inside the photo';
   if (hasGps) {
     if (dist == null) placeNote = 'Distance not available';
     else placeNote = near ? `${formatDistance(dist)} from the complaint spot` : `${formatDistance(dist)} away from the complaint spot`;
@@ -175,9 +184,18 @@ export function PhotoEvidence({ resolution: r, complaintCreatedAt, reopenedAt })
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Photo evidence</p>
-        <p className="text-sm text-slate-500">Read automatically from the photo file, not typed by the worker.</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Photo evidence</p>
+          <p className="text-sm text-slate-500">
+            {live
+              ? 'Recorded by the app at the moment of capture, not typed by the worker.'
+              : "Read automatically from the photo file's hidden data, not typed by the worker."}
+          </p>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${live ? 'bg-[#0F6E5C] text-white' : 'bg-slate-100 text-slate-600'}`}>
+          {live ? <><Radio className="w-3.5 h-3.5" /> Live in-app capture</> : <><Upload className="w-3.5 h-3.5" /> Uploaded file</>}
+        </span>
       </div>
       <div className="grid sm:grid-cols-2 gap-3">
         <EvidenceRow icon={Camera} label="Photo taken" value={taken ? formatDateTime(r.photo_taken_at) : 'Not recorded'} note={takenNote} tone={takenTone} />
@@ -192,9 +210,11 @@ export function PhotoEvidence({ resolution: r, complaintCreatedAt, reopenedAt })
         <EvidenceRow
           icon={Fingerprint}
           label="Camera data"
-          value={r.has_exif_metadata ? 'Present' : 'Missing'}
-          note={r.has_exif_metadata ? 'Photo carries its original camera data' : 'Typical of AI-generated, edited or downloaded images'}
-          tone={r.has_exif_metadata ? 'good' : 'bad'}
+          value={live ? 'Live in-app camera' : r.has_exif_metadata ? 'Present' : 'Missing'}
+          note={live
+            ? 'Old photos cannot be picked from the gallery'
+            : r.has_exif_metadata ? 'Photo carries its original camera data' : 'Typical of AI-generated, edited or downloaded images'}
+          tone={live || r.has_exif_metadata ? 'good' : 'bad'}
         />
       </div>
     </div>

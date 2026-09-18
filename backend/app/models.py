@@ -57,6 +57,9 @@ class Resolution(Base):
 
     human_review_status = Column(String(50), default="PENDING") # 'PENDING', 'Genuine', 'Confirmed fake'
 
+    # 'live' = taken with the in-app camera (server time + device GPS), 'upload' = file checked by EXIF
+    capture_method = Column(String(20), default="upload")
+
     # Evidence read from the photo file (EXIF): when and where it was actually taken
     photo_taken_at = Column(DateTime, nullable=True)
     photo_latitude = Column(Float, nullable=True)

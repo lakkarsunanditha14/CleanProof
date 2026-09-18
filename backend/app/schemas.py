@@ -32,6 +32,7 @@ class ResolutionResponse(BaseModel):
     exif_passed: Optional[bool] = None
     has_exif_metadata: bool
     human_review_status: str
+    capture_method: str = "upload"
     photo_taken_at: Optional[datetime] = None
     photo_latitude: Optional[float] = None
     photo_longitude: Optional[float] = None

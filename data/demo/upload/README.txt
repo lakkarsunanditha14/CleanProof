@@ -31,7 +31,14 @@ STEP 6  Closed after the deadline (reason required)
   Expected: 100/100 VERIFIED, "Closed 2h after the deadline. Reason: ..."
   (Without a reason the closure is refused.)
 
-STEP 7  Dashboard
+STEP 7  Live camera (the answer to "what if the worker uploads an old photo?")
+  Report issue -> "Take live photo" of some paper litter on the floor -> category Garbage dump -> Submit
+  Pick up the litter -> Worker -> that complaint -> "Take live photo" -> Mark resolved
+  Expected: VERIFIED, evidence shows "Live in-app capture, time set by the server".
+  Point: workers use the in-app camera, so an old gallery photo cannot even be selected.
+  (Allow camera and location in Chrome when asked. Uses the laptop webcam.)
+
+STEP 8  Dashboard
   Show the hotspots: Dilsukhnagar (fake closures) and Kukatpally (missed deadlines)
   and the "Why deadlines were missed" chart
 

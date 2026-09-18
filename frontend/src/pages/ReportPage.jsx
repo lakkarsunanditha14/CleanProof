@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import SlaBadge from '../components/SlaBadge';
+import CameraCapture from '../components/CameraCapture';
 import { CATEGORIES, WARDS, categoryLabel } from '../constants';
 import { fetchApi, formatDateTime } from '../api';
 
@@ -36,12 +37,24 @@ export default function ReportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   function handlePhoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhoto(file);
     setPreview(URL.createObjectURL(file));
+  }
+
+  function handleCapture({ file, url, lat, lng }) {
+    setPhoto(file);
+    setPreview(url);
+    setCameraOpen(false);
+    if (lat != null) {
+      setLatitude(lat.toFixed(6));
+      setLongitude(lng.toFixed(6));
+      setLocationNote('Location taken from the live photo.');
+    }
   }
 
   function useMyLocation() {
@@ -166,6 +179,9 @@ export default function ReportPage() {
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
             <Camera className="w-5 h-5 text-[#0F6E5C]" /> Photo of the issue
           </h2>
+          {cameraOpen ? (
+            <CameraCapture onCapture={handleCapture} onCancel={() => setCameraOpen(false)} />
+          ) : (
           <label className="block cursor-pointer">
             <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="sr-only" />
             {preview ? (
@@ -178,11 +194,17 @@ export default function ReportPage() {
             ) : (
               <div className="border-2 border-dashed border-slate-300 rounded-xl py-12 text-center hover:border-[#0F6E5C] hover:bg-emerald-50/40 transition-colors">
                 <Camera className="w-10 h-10 mx-auto text-slate-400" />
-                <p className="mt-3 font-medium text-slate-700">Take or upload a photo</p>
+                <p className="mt-3 font-medium text-slate-700">Upload a photo</p>
                 <p className="text-xs text-slate-500 mt-1">JPG or PNG</p>
               </div>
             )}
           </label>
+          )}
+          {!cameraOpen && (
+            <Button variant={preview ? 'outline' : 'primary'} icon={Camera} onClick={() => setCameraOpen(true)} className="w-full">
+              {preview ? 'Retake with live camera' : 'Take live photo (fills the location too)'}
+            </Button>
+          )}
         </Card>
 
         <Card className="space-y-5">

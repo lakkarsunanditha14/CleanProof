@@ -218,6 +218,7 @@ async def resolve_complaint(
     longitude: Optional[float] = Form(None),
     delay_reason: Optional[str] = Form(None),
     delay_note: Optional[str] = Form(None),
+    capture_mode: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -262,7 +263,8 @@ async def resolve_complaint(
         after_image_path=after_path_str,
         after_latitude_input=latitude,
         after_longitude_input=longitude,
-        after_timestamp_input=datetime.utcnow()
+        after_timestamp_input=datetime.utcnow(),
+        live_capture=(capture_mode == "live")
     )
 
     # Save resolution record
@@ -286,6 +288,7 @@ async def resolve_complaint(
         perceptual_hash=verification_result["perceptual_hash"],
         exif_passed=verification_result["exif_passed"],
         has_exif_metadata=verification_result["has_exif_metadata"],
+        capture_method=verification_result["capture_method"],
         photo_taken_at=verification_result["photo_taken_at"],
         photo_latitude=verification_result["photo_latitude"],
         photo_longitude=verification_result["photo_longitude"],

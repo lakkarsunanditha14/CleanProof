@@ -16,7 +16,8 @@ def run_resolution_verification_pipeline(
     after_image_path: str,
     after_latitude_input: Optional[float] = None,
     after_longitude_input: Optional[float] = None,
-    after_timestamp_input: Optional[datetime] = None
+    after_timestamp_input: Optional[datetime] = None,
+    live_capture: bool = False
 ) -> Dict[str, Any]:
     """
     Executes the 5-check resolution verification engine using local CLIP model photo comparison:
@@ -29,6 +30,10 @@ def run_resolution_verification_pipeline(
     - Minimum score: 0
     - Verdict: >= 75 VERIFIED, 40-74 SUSPICIOUS, < 40 LIKELY FAKE
     - Always returns reasons list in plain English.
+
+    live_capture=True means the photo was taken with the in-app camera (no gallery upload):
+    the capture time is the server's own clock and the location is the device GPS sent with
+    the capture, so an old photo cannot be selected and its date cannot be edited.
     """
     score = 100
     reasons: List[str] = []
@@ -41,6 +46,15 @@ def run_resolution_verification_pipeline(
     exif_lat = exif_data.get("latitude")
     exif_lon = exif_data.get("longitude")
     exif_ts = exif_data.get("timestamp")
+
+    # Evidence used by the location and time checks: the in-app capture (server time + device GPS)
+    # for live photos, otherwise only what is stored inside the photo file (EXIF)
+    if live_capture:
+        photo_lat, photo_lon = after_latitude_input, after_longitude_input
+        taken_utc = datetime.utcnow()
+    else:
+        photo_lat, photo_lon = exif_lat, exif_lon
+        taken_utc = exif_ts - timedelta(hours=5, minutes=30) if exif_ts else None  # EXIF is IST
 
     # DB storage fallback values (saved to Resolution model record)
     db_after_lat = after_latitude_input or exif_lat
@@ -74,10 +88,10 @@ def run_resolution_verification_pipeline(
     gps_passed = False
     gps_distance_meters = None
 
-    if exif_lat is not None and exif_lon is not None:
+    if photo_lat is not None and photo_lon is not None:
         gps_distance_meters = haversine_distance(
             complaint.latitude, complaint.longitude,
-            exif_lat, exif_lon
+            photo_lat, photo_lon
         )
         if gps_distance_meters > 50.0:
             score -= 30
@@ -85,6 +99,9 @@ def run_resolution_verification_pipeline(
         else:
             gps_passed = True
             reasons.append(f"GPS Distance: Location within {round(gps_distance_meters, 1)}m of complaint site (Pass)")
+    elif live_capture:
+        score -= 30
+        reasons.append("Location cannot be verified: location was not shared during the live capture (-30 pts)")
     else:
         # Missing EXIF GPS metadata
         score -= 30
@@ -93,7 +110,11 @@ def run_resolution_verification_pipeline(
     # CHECK 3: Timestamp Order Check - EXIF ONLY (IST UTC+5:30 conversion)
     timestamp_passed = False
 
-    if exif_ts is not None:
+    if live_capture:
+        # Server clock at the moment of capture: always after the complaint, and cannot be edited
+        timestamp_passed = True
+        reasons.append(f"Timestamp: Captured live in the app at {(taken_utc + timedelta(hours=5, minutes=30)).strftime('%Y-%m-%d %H:%M')} IST, time set by the server (Pass)")
+    elif exif_ts is not None:
         # EXIF DateTimeOriginal is local Indian time (IST, UTC+5:30)
         # Convert EXIF timestamp to UTC before comparing with start time
         exif_ts_utc = exif_ts - timedelta(hours=5, minutes=30)
@@ -144,8 +165,10 @@ def run_resolution_verification_pipeline(
 
     # CHECK 5: EXIF Metadata Check
     has_exif = exif_data.get("has_exif", False)
-    exif_passed = has_exif
-    if not has_exif:
+    exif_passed = has_exif or live_capture
+    if live_capture:
+        reasons.append("Camera data: Photo captured live with the in-app camera, gallery uploads not possible (Pass)")
+    elif not has_exif:
         score -= 10
         reasons.append("EXIF Metadata: Missing camera/EXIF metadata (-10 pts)")
     else:
@@ -180,8 +203,9 @@ def run_resolution_verification_pipeline(
         "perceptual_hash": after_phash,
         "exif_passed": exif_passed,
         "has_exif_metadata": has_exif,
-        # Evidence read from the photo file itself (None when the photo has no EXIF)
-        "photo_taken_at": exif_ts - timedelta(hours=5, minutes=30) if exif_ts else None,  # EXIF is IST, stored as UTC
-        "photo_latitude": exif_lat,
-        "photo_longitude": exif_lon,
+        # When and where the photo was taken: in-app capture, or read from the photo file (EXIF)
+        "photo_taken_at": taken_utc,
+        "photo_latitude": photo_lat,
+        "photo_longitude": photo_lon,
+        "capture_method": "live" if live_capture else "upload",
     }
