@@ -36,3 +36,7 @@ data/demo/upload/*.jpg
 
 # Local HTTPS certificate for phone testing (generated per laptop)
 frontend/certs/
+
+# Downloaded tools (cloudflared for the public demo link)
+tools/
+CleanProof_phone_QR.png

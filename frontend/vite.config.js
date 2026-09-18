@@ -22,6 +22,8 @@ export default defineConfig({
     host: true, // also listen on the Wi-Fi network, not only this laptop
     port: 5173,
     https,
+    // Allow visitors through a Cloudflare quick tunnel (public https link for phones, any network)
+    allowedHosts: ['.trycloudflare.com'],
     proxy: {
       '/api': backend,
       '/static': backend,

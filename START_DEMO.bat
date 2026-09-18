@@ -1,0 +1,28 @@
+@echo off
+rem Starts CleanProof for a demo: fresh demo data, backend, frontend and a public link for phones.
+rem Close the three windows it opens to stop everything.
+cd /d "%~dp0"
+
+echo Resetting demo data (this clears anything reported earlier)...
+backend\venv\Scripts\python.exe scripts\reset_demo.py
+if errorlevel 1 (
+  echo Reset failed. Is another backend window still open? Close it and try again.
+  pause
+  exit /b 1
+)
+
+start "CleanProof backend" cmd /k "cd /d "%~dp0backend" && venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000"
+start "CleanProof frontend" cmd /k "cd /d "%~dp0frontend" && "C:\Program Files\nodejs\npm.cmd" run dev"
+
+echo Waiting for the servers to start...
+timeout /t 8 /nobreak > nul
+
+start "" msedge "https://localhost:5173/dashboard"
+start "CleanProof public link" cmd /k "cd /d "%~dp0" && backend\venv\Scripts\python.exe scripts\public_link.py"
+
+echo.
+echo CleanProof is starting:
+echo   - Laptop:  https://localhost:5173  (opened in Edge)
+echo   - Phones:  the public link and QR code appear in the "public link" window
+echo.
+pause
