@@ -31,9 +31,17 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 def create_dummy_image_bytes(label: str = "Test Image") -> bytes:
-    img = Image.new("RGB", (200, 200), color=(73, 109, 137))
+    """A real demo photo as JPEG, so it passes the blur/darkness check on upload."""
+    img = Image.open(next((PROJECT_ROOT / "data" / "demo" / "before").glob("before_3.*"))).convert("RGB")
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+def create_blank_image_bytes() -> bytes:
+    """A flat single-colour image: no detail at all, so it must be rejected as too blurry."""
+    buf = io.BytesIO()
+    Image.new("RGB", (200, 200), color=(73, 109, 137)).save(buf, format="JPEG")
     return buf.getvalue()
 
 def test_full_backend_workflow():
@@ -83,6 +91,12 @@ def test_full_backend_workflow():
         detail = res.json()
         assert detail["title"] == create_payload["title"]
         print(f"[PASS] GET /api/complaints/{c_id}")
+
+        # 4b. Unusable (blank/blurry) photos are rejected with a retake message
+        res = client.post(f"/api/complaints/{c_id}/resolve",
+                          files={"photo": ("blurry.jpg", create_blank_image_bytes(), "image/jpeg")})
+        assert res.status_code == 400 and "too blurry" in res.json()["detail"], f"Blurry photo not rejected: {res.text}"
+        print("[PASS] Blurry photo rejected with a retake message")
 
         # 5. Municipal worker resolves its own complaint
         after_img = create_dummy_image_bytes("After Cleaned Walkway")

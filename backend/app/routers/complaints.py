@@ -20,8 +20,22 @@ from app.schemas import (
 from app.services.sla_service import calculate_sla_info, get_category_sla_hours
 from app.services.exif_service import calculate_image_hash, extract_exif_metadata
 from app.services.verification import run_resolution_verification_pipeline
+from app.services.image_quality import quality_problem
 
 router = APIRouter(prefix="/api/complaints", tags=["Complaints"])
+
+
+def _reject_unusable_photo(file_path: Path) -> None:
+    """Delete the saved upload and ask for a retake if it is not an image, too blurry or too dark."""
+    from PIL import Image
+    try:
+        with Image.open(file_path) as img:
+            problem = quality_problem(img)
+    except Exception:
+        problem = "The file is not a readable photo. Please upload a JPG or PNG image."
+    if problem:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=problem)
 
 def _format_complaint_response(complaint: Complaint) -> ComplaintResponse:
     latest_resolution = complaint.resolutions[0] if complaint.resolutions else None
@@ -93,6 +107,7 @@ async def create_complaint(
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(photo.file, buffer)
+    _reject_unusable_photo(file_path)
 
     saved_path_str = str(file_path.resolve()).replace("\\", "/")
 
@@ -253,6 +268,7 @@ async def resolve_complaint(
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(photo.file, buffer)
+    _reject_unusable_photo(file_path)
 
     after_path_str = str(file_path.resolve()).replace("\\", "/")
 
@@ -339,6 +355,7 @@ async def reopen_complaint(
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(photo.file, buffer)
+    _reject_unusable_photo(file_path)
 
     reopen_path_str = str(file_path.resolve()).replace("\\", "/")
 

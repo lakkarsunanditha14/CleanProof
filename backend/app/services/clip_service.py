@@ -82,24 +82,65 @@ def _get_labels_for_category(category: Optional[str] = None) -> Tuple[List[str],
         all_clean.extend(s["clean"])
     return all_problem, all_clean
 
+# Also score 4 overlapping zoomed-in parts of the photo and keep the highest problem score,
+# so small or scattered litter that is lost in the full view is still noticed.
+MULTI_CROP = True
+
+
+def _views(image: Image.Image, multi_crop: bool) -> List[Image.Image]:
+    if not multi_crop:
+        return [image]
+    w, h = image.size
+    cw, ch = int(w * 0.6), int(h * 0.6)
+    corners = [(0, 0), (w - cw, 0), (0, h - ch), (w - cw, h - ch)]
+    return [image] + [image.crop((x, y, x + cw, y + ch)) for x, y in corners]
+
+
+def image_problem_probability(
+    image: Image.Image,
+    problem_labels: List[str],
+    clean_labels: List[str],
+    multi_crop: Optional[bool] = None
+) -> float:
+    """Problem probability for one image: problem labels vs clean labels (highest over the views)."""
+    if multi_crop is None:
+        multi_crop = MULTI_CROP
+    all_labels = problem_labels + clean_labels
+    model, processor = _get_clip_model()
+    views = _views(image.convert("RGB"), multi_crop)
+
+    inputs = processor(text=all_labels, images=views, return_tensors="pt", padding=True)
+    with torch.no_grad():
+        probs = model(**inputs).logits_per_image.softmax(dim=-1)  # one row per view
+
+    return float(probs[:, :len(problem_labels)].sum(dim=-1).max())
+
+
 def get_image_problem_probability(
     image_path: str,
     problem_labels: List[str],
     clean_labels: List[str]
 ) -> float:
-    """Computes problem probability for a single image against problem vs clean label sets."""
-    all_labels = problem_labels + clean_labels
-    model, processor = _get_clip_model()
-    image = Image.open(image_path).convert("RGB")
+    """Computes problem probability for a single image file against problem vs clean label sets."""
+    return image_problem_probability(Image.open(image_path), problem_labels, clean_labels)
 
-    inputs = processor(text=all_labels, images=image, return_tensors="pt", padding=True)
 
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits_per_image = outputs.logits_per_image
-        probs = logits_per_image.softmax(dim=-1).squeeze(0).tolist()
+def compare_images_with_clip(
+    before_image: Image.Image,
+    after_image: Image.Image,
+    category: Optional[str] = None,
+    threshold: Optional[float] = None,
+    ratio: Optional[float] = None
+) -> Dict[str, Any]:
+    """Same decision as compare_photos_with_clip, for images already in memory."""
+    threshold = CLIP_THRESHOLD if threshold is None else threshold
+    ratio = CLIP_RATIO if ratio is None else ratio
+    problem_labels, clean_labels = _get_labels_for_category(category)
+    before_prob = image_problem_probability(before_image, problem_labels, clean_labels)
+    after_prob = image_problem_probability(after_image, problem_labels, clean_labels)
+    issue_present = (after_prob >= threshold) or (after_prob >= ratio * before_prob)
+    return {"issue_present": issue_present, "before_problem_prob": before_prob, "after_problem_prob": after_prob}
 
-    return sum(probs[:len(problem_labels)])
 
 def compare_photos_with_clip(
     before_image_path: str,
