@@ -31,7 +31,8 @@ def _format_complaint_response(complaint: Complaint) -> ComplaintResponse:
         created_at=complaint.created_at,
         sla_hours=complaint.sla_hours,
         current_status=complaint.status,
-        resolution_time=resolution_time
+        resolution_time=resolution_time,
+        reopened_at=complaint.reopened_at
     )
 
     resolutions_resp = [ResolutionResponse.model_validate(r) for r in complaint.resolutions]
@@ -160,7 +161,8 @@ def list_complaints(
             created_at=c.created_at,
             sla_hours=c.sla_hours,
             current_status=c.status,
-            resolution_time=res_time
+            resolution_time=res_time,
+            reopened_at=c.reopened_at
         )
 
         # Filter by sla_status if requested

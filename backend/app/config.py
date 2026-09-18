@@ -22,8 +22,12 @@ if not env_db_url or env_db_url.startswith("sqlite:///./"):
 else:
     DATABASE_URL = env_db_url
 
-# Image directory path (absolute path to data/images)
-IMAGES_DIR = Path(os.getenv("IMAGES_DIR", PROJECT_ROOT / "data" / "images")).resolve()
+# Image directory path (absolute path to data/images).
+# A relative IMAGES_DIR in .env is resolved against the backend folder, never the current folder.
+_images_dir = Path(os.getenv("IMAGES_DIR", PROJECT_ROOT / "data" / "images"))
+if not _images_dir.is_absolute():
+    _images_dir = backend_dir / _images_dir
+IMAGES_DIR = _images_dir.resolve()
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 SLA_HOURS = {

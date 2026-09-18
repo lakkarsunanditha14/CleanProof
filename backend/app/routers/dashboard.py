@@ -40,7 +40,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             created_at=c.created_at,
             sla_hours=c.sla_hours,
             current_status=c.status,
-            resolution_time=res_time
+            resolution_time=res_time,
+            reopened_at=c.reopened_at
         )
         
         if sla.is_breached:
@@ -93,7 +94,7 @@ def get_sla_by_ward(db: Session = Depends(get_db)):
         for c in ward_complaints:
             latest_res = c.resolutions[0] if c.resolutions else None
             res_time = latest_res.created_at if latest_res else None
-            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time)
+            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time, reopened_at=c.reopened_at)
             if sla.is_breached:
                 breached += 1
             else:
@@ -143,7 +144,7 @@ def get_sla_by_category(db: Session = Depends(get_db)):
         for c in cat_complaints:
             latest_res = c.resolutions[0] if c.resolutions else None
             res_time = latest_res.created_at if latest_res else None
-            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time)
+            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time, reopened_at=c.reopened_at)
             if sla.is_breached:
                 breached += 1
             else:
@@ -209,7 +210,7 @@ def get_map_data(db: Session = Depends(get_db)):
         latest_res = c.resolutions[0] if c.resolutions else None
         res_time = latest_res.created_at if latest_res else None
         
-        sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time)
+        sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time, reopened_at=c.reopened_at)
 
         points.append(
             MapPointResponse(

@@ -462,7 +462,7 @@ def reset_demo_database():
         for c in all_c:
             latest_res = c.resolutions[0] if c.resolutions else None
             res_time = latest_res.created_at if latest_res else None
-            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time)
+            sla = calculate_sla_info(c.created_at, c.sla_hours, c.status, res_time, reopened_at=c.reopened_at)
             
             if sla.is_breached:
                 breached_total += 1
@@ -492,7 +492,7 @@ def reset_demo_database():
         print("-" * 90)
         for idx, cid in enumerate(live_complaint_ids, start=1):
             c_obj = db.query(Complaint).filter(Complaint.id == cid).first()
-            sla_info = calculate_sla_info(c_obj.created_at, c_obj.sla_hours, c_obj.status)
+            sla_info = calculate_sla_info(c_obj.created_at, c_obj.sla_hours, c_obj.status, reopened_at=c_obj.reopened_at)
             print(f"{c_obj.id:<4} | {c_obj.category:<20} | {c_obj.ward:<15} | {sla_info.status:<15} | {c_obj.title}")
         print("-" * 90)
         print(f"\nReady-to-upload files placed in: {upload_dir}")
