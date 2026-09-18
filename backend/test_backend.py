@@ -26,14 +26,14 @@ def test_full_backend_workflow():
     assert len(complaints) > 0, "Expected seeded complaints"
     print(f"[PASS] GET /api/complaints (Found {len(complaints)} complaints)")
 
-    # 3. Create a new complaint
+    # 3. Create a new complaint (isolated test complaint)
     before_img = create_dummy_image_bytes("Before Waste Dump")
     create_payload = {
         "title": "Uncleared construction rubble near School Gate 2",
         "category": "construction debris",
-        "ward": "Ward 1",
-        "latitude": 28.6150,
-        "longitude": 77.2100,
+        "ward": "Ameerpet",
+        "latitude": 17.4375,
+        "longitude": 78.4483,
         "description": "Debris pile blocking school entrance"
     }
     files = {"photo": ("before_school.jpg", before_img, "image/jpeg")}
@@ -53,17 +53,18 @@ def test_full_backend_workflow():
     assert detail["title"] == create_payload["title"]
     print(f"[PASS] GET /api/complaints/{c_id}")
 
-    # 5. Municipal worker resolves the complaint
+    # 5. Municipal worker resolves its own complaint
     after_img = create_dummy_image_bytes("After Cleaned Walkway")
     resolve_files = {"photo": ("after_school.jpg", after_img, "image/jpeg")}
     resolve_data = {
-        "latitude": "28.6151",  # ~11m distance away (within 50m limit)
-        "longitude": "77.2100"
+        "latitude": "17.4376",  # ~11m distance away (within 50m limit)
+        "longitude": "78.4483"
     }
     
     res = client.post(f"/api/complaints/{c_id}/resolve", data=resolve_data, files=resolve_files)
     assert res.status_code == 200, f"Resolve complaint failed: {res.text}"
     resolution = res.json()
+    res_id = resolution["id"]
     assert resolution["verdict"] in ["VERIFIED", "SUSPICIOUS", "LIKELY FAKE"]
     assert len(resolution["reasons"]) > 0, "Reasons list should not be empty"
     print(f"[PASS] POST /api/complaints/{c_id}/resolve (Verdict: {resolution['verdict']}, Score: {resolution['score']}, Reasons: {len(resolution['reasons'])})")
@@ -73,7 +74,7 @@ def test_full_backend_workflow():
     assert res.json()["status"] == "RESOLVED"
     print(f"[PASS] Complaint status updated to RESOLVED")
 
-    # 6. Citizen reopens the complaint
+    # 6. Citizen reopens its own complaint
     reopen_img = create_dummy_image_bytes("Reopen New Photo")
     reopen_files = {"photo": ("reopen_school.jpg", reopen_img, "image/jpeg")}
     reopen_data = {"reason": "Worker only cleared half the debris"}
@@ -116,18 +117,17 @@ def test_full_backend_workflow():
     assert len(map_points) >= 6
     print(f"[PASS] GET /api/dashboard/map-data ({len(map_points)} map points)")
 
-    # 8. Human verification endpoints
+    # 8. Human verification endpoint test on its OWN resolution
     res = client.get("/api/verification/flagged")
     assert res.status_code == 200
     flagged = res.json()
     print(f"[PASS] GET /api/verification/flagged ({len(flagged)} flagged items)")
 
-    if len(flagged) > 0:
-        target_res_id = flagged[0]["id"]
-        res = client.post(f"/api/verification/{target_res_id}/review", json={"decision": "Confirmed fake"})
-        assert res.status_code == 200
-        assert res.json()["human_review_status"] == "Confirmed fake"
-        print(f"[PASS] POST /api/verification/{target_res_id}/review -> Confirmed fake")
+    # Review test complaint's resolution directly
+    res = client.post(f"/api/verification/{res_id}/review", json={"decision": "Confirmed fake"})
+    assert res.status_code == 200
+    assert res.json()["human_review_status"] == "Confirmed fake"
+    print(f"[PASS] POST /api/verification/{res_id}/review -> Confirmed fake")
 
     print("\n=== ALL BACKEND INTEGRATION TESTS PASSED SUCCESSFULLY ===")
 
