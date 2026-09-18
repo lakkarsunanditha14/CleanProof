@@ -5,13 +5,13 @@ import 'leaflet/dist/leaflet.css';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Legend, ReferenceLine,
 } from 'recharts';
-import { FileText, CheckCircle2, ShieldAlert, Scale, RefreshCw, AlertCircle, Flame } from 'lucide-react';
+import { FileText, CheckCircle2, ShieldAlert, Scale, RefreshCw, AlertCircle, Flame, Info } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import { WARDS, categoryLabel } from '../constants';
-import { fetchApi, imageUrl } from '../api';
+import { fetchApi, imageUrl, isSamplePhoto } from '../api';
 
 const GREEN = '#0F6E5C';
 const AMBER = '#C77700';
@@ -120,6 +120,7 @@ export default function DashboardPage() {
       byFalse: [...wards].sort((a, b) => b.false_closures - a.false_closures),
       categories: data.categories.map((c) => ({ ...c, name: `${categoryLabel(c.category)} (${c.sla_hours}h)` })),
       maxFalse: Math.max(1, ...wards.map((w) => w.false_closures)),
+      synthetic: data.points.filter((p) => isSamplePhoto(p.before_image_path)).length,
       // Fit the map to every complaint (e.g. Narsapur is ~45 km outside Hyderabad)
       bounds: [
         [Math.min(...data.points.map((p) => p.latitude)), Math.min(...data.points.map((p) => p.longitude))],
@@ -144,6 +145,17 @@ export default function DashboardPage() {
 
       {data && derived && (
         <>
+          <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-slate-700">
+            <Info className="w-5 h-5 shrink-0 text-sky-700 mt-0.5" />
+            <p>
+              <span className="font-semibold text-slate-900">Demo data: </span>
+              {derived.synthetic} of these {data.stats.total_complaints} complaints are <b>synthetic history</b> generated to show
+              how the dashboard works with a city's data (the problem statement asks for synthetic data only).
+              The other {data.stats.total_complaints - derived.synthetic} are live complaints with real photos, including anything
+              reported during this demo.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi icon={FileText} label="Complaints" value={data.stats.total_complaints} note={`${data.stats.active_complaints} open, ${data.stats.resolved_complaints} closed`} color={INK} />
             <Kpi icon={CheckCircle2} label="On time" value={`${data.stats.sla_adherence_percent}%`} note={`${data.stats.total_breached} missed the deadline`} color={GREEN} />
