@@ -3,13 +3,15 @@ rem Starts CleanProof for a demo: fresh demo data, backend, frontend and a publi
 rem Close the three windows it opens to stop everything.
 cd /d "%~dp0"
 
-echo Resetting demo data (this clears anything reported earlier)...
+choice /c YN /n /t 10 /d N /m "Reset demo data? This DELETES all complaints reported so far. Y = reset, N = keep (auto N in 10s): "
+if errorlevel 2 goto keepdata
 backend\venv\Scripts\python.exe scripts\reset_demo.py
 if errorlevel 1 (
   echo Reset failed. Is another backend window still open? Close it and try again.
   pause
   exit /b 1
 )
+:keepdata
 
 start "CleanProof backend" cmd /k "cd /d "%~dp0backend" && venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000"
 start "CleanProof frontend" cmd /k "cd /d "%~dp0frontend" && "C:\Program Files\nodejs\npm.cmd" run dev"

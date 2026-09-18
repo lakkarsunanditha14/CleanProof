@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import StatusBadge from '../components/StatusBadge';
+import VerdictBadge from '../components/VerdictBadge';
 import SlaBadge from '../components/SlaBadge';
 import { ReasonList, ScoreHeader, Photo, PhotoEvidence } from '../components/Verification';
 import { categoryLabel } from '../constants';
@@ -32,8 +33,18 @@ export default function TrackPage() {
   const [reopenReason, setReopenReason] = useState('');
   const [reopening, setReopening] = useState(false);
   const [reopenError, setReopenError] = useState('');
+  const [all, setAll] = useState([]);
+
+  // Every complaint, newest first, for searching by title/ward and the list below
+  useEffect(() => {
+    fetchApi('/api/complaints').then(setAll).catch(() => {});
+  }, [complaint]);
 
   const id = params.get('id');
+  const text = query.trim().toLowerCase();
+  const matches = !id && text && !/^#?\d+$/.test(text)
+    ? all.filter((c) => `${c.title} ${c.ward} ${c.category}`.toLowerCase().includes(text))
+    : all;
   const isOpen = complaint && complaint.status !== 'RESOLVED';
   const now = useNow(isOpen);
 
@@ -57,8 +68,10 @@ export default function TrackPage() {
   function handleSearch(e) {
     e.preventDefault();
     const clean = query.trim().replace('#', '');
+    setError('');
     if (/^\d+$/.test(clean)) setParams({ id: clean });
-    else setError('Enter a complaint number, e.g. 1');
+    else if (matches.length === 1) setParams({ id: String(matches[0].id) });
+    else if (matches.length === 0) setError(`No complaint matches "${query.trim()}".`);
   }
 
   async function handleReopen(e) {
@@ -91,9 +104,8 @@ export default function TrackPage() {
       <form onSubmit={handleSearch} className="flex gap-3 mb-8">
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Complaint ID, e.g. 1"
-          inputMode="numeric"
+          onChange={(e) => { setQuery(e.target.value); if (id) setParams({}); setComplaint(null); setError(''); }}
+          placeholder="Complaint ID or title, e.g. 7 or paper litter"
           className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base focus:border-[#0F6E5C] focus:outline-none focus:ring-2 focus:ring-[#0F6E5C]/20"
         />
         <Button type="submit" size="lg" icon={Search}>Track</Button>
@@ -247,9 +259,34 @@ export default function TrackPage() {
         </div>
       )}
 
-      {!loading && !complaint && !error && (
-        <Card className="text-center py-12 text-slate-500 text-sm">
-          Enter a complaint ID above. Demo complaints are #1 to #6.
+      {!loading && !complaint && (
+        <Card padding="p-0" className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-slate-900">{text && !/^#?\d+$/.test(text) ? 'Matching complaints' : 'All complaints'}</h3>
+            <span className="text-sm text-slate-500">{matches.length}</span>
+          </div>
+          {matches.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-slate-500">No complaints to show.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-[32rem] overflow-y-auto">
+              {matches.map((c) => (
+                <li key={c.id}>
+                  <button type="button" onClick={() => { setQuery(String(c.id)); setParams({ id: String(c.id) }); }}
+                    className="w-full text-left px-6 py-3.5 hover:bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <span className="text-sm font-semibold text-slate-500 w-12">#{c.id}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-semibold text-slate-900 truncate">{c.title}</span>
+                      <span className="block text-xs text-slate-500">{c.ward} &middot; {categoryLabel(c.category)} &middot; reported {formatDateTime(c.created_at)}</span>
+                    </span>
+                    <span className="flex gap-2 shrink-0">
+                      <StatusBadge status={c.status} />
+                      {c.latest_verdict && <VerdictBadge verdict={c.latest_verdict} />}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       )}
     </div>
