@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-civic-50: #f0fdf9;
+  --color-civic-100: #ccfbf1;
+  --color-civic-600: #0F6E5C;
+  --color-civic-700: #0D5C4D;
+  --color-civic-800: #0A4A3E;
+  --color-warning-500: #C77700;
+  --color-danger-600: #B42318;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
