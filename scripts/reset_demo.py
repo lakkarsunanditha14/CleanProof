@@ -31,6 +31,31 @@ WARD_CENTRES = {
     "LB Nagar": (17.3457, 78.5522)
 }
 
+# Synthetic history closures: which checks failed, per verdict. Penalties match verification.py.
+HISTORY_PENALTY = {"clip": 50, "gps": 30, "time": 30, "dup": 30, "exif": 10}
+HISTORY_PROFILES = {
+    "VERIFIED": [()],
+    "SUSPICIOUS": [("gps",), ("time",), ("dup",), ("clip",)],
+    "LIKELY FAKE": [("clip", "gps"), ("clip", "time"), ("gps", "time", "exif")],
+}
+
+
+def history_reasons(failed):
+    no_exif = "exif" in failed
+    return [
+        "AI Vision (CLIP): problem not reduced (-50 pts)" if "clip" in failed else "AI Vision (CLIP): problem reduced (Pass)",
+        ("Location cannot be verified: photo has no GPS data (-30 pts)" if no_exif else
+         "GPS Distance: Resolution photo is 850m away from complaint site (>50m limit) (-30 pts)") if "gps" in failed
+        else "GPS Distance: Location within 15m of complaint site (Pass)",
+        ("Time cannot be verified: photo has no timestamp (-30 pts)" if no_exif else
+         "Timestamp: After-photo was taken before the complaint (-30 pts)") if "time" in failed
+        else "Timestamp: After-photo timestamp is later than complaint time (Pass)",
+        "Duplicate Image: Perceptual image hash matches a previously submitted resolution photo (-30 pts)" if "dup" in failed
+        else "Duplicate Image: Perceptual hash is unique (Pass)",
+        "EXIF Metadata: Missing camera/EXIF metadata (-10 pts)" if no_exif else "EXIF Metadata: Original camera EXIF metadata present (Pass)",
+    ]
+
+
 def deg_to_exif_format(val: float):
     """Converts decimal degrees float into EXIF GPS tuple format ((d, 1), (m, 1), (s, 100))."""
     abs_val = abs(val)
@@ -74,6 +99,7 @@ def reset_demo_database():
     random.seed(42)
 
     delay_rng = random.Random(2026)  # separate stream so delay reasons do not shift other seeded data
+    profile_rng = random.Random(7)  # separate stream for which checks failed in history records
     # 1. Wipe & Re-create DB tables
     print("1. Wiping & re-creating database tables...")
     Base.metadata.drop_all(bind=engine)
@@ -398,18 +424,16 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                     elif h_rand < 0.70:
                         human_rev = "Genuine"
                     else:
-                        human_rev = "PENDING"
+                        # History is already reviewed, so the live review queue starts empty
+                        human_rev = "Confirmed fake"
                 else:
                     human_rev = "Genuine"
 
-                reasons_list = [
-                    f"AI Vision (CLIP): {'area looks clean' if verdict == 'VERIFIED' else 'problem not reduced'} (Pass)" if verdict == "VERIFIED" else f"AI Vision (CLIP): problem not reduced (-50 pts)",
-                    "GPS Distance: Location within site bounds (Pass)" if verdict == "VERIFIED" else "GPS Distance: Resolution photo >50m away (-30 pts)",
-                    "Timestamp: Valid timestamp (Pass)",
-                    "Duplicate Image: Perceptual hash unique (Pass)",
-                    "EXIF Metadata: Original EXIF present (Pass)"
-                ]
-
+                # Pick which checks failed; the score is exactly 100 minus those penalties
+                failed = profile_rng.choice(HISTORY_PROFILES[verdict])
+                score = 100 - sum(HISTORY_PENALTY[c] for c in failed)
+                has_exif = "exif" not in failed
+                reasons_list = history_reasons(failed)
                 bg_res = Resolution(
                     complaint_id=bg_complaint.id,
                     after_image_path="synthetic_bg_after",
@@ -419,17 +443,17 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                     score=score,
                     verdict=verdict,
                     reasons=reasons_list,
-                    clip_issue_present=(verdict != "VERIFIED"),
+                    clip_issue_present=("clip" in failed),
                     clip_confidence=88.0,
                     clip_explanation="Synthetic background simulation.",
                     clip_status="COMPLETED",
-                    gps_distance_meters=15.0 if verdict == "VERIFIED" else 120.0,
-                    gps_passed=(verdict == "VERIFIED"),
-                    timestamp_passed=True,
-                    duplicate_passed=True,
+                    gps_distance_meters=(850.0 if "gps" in failed else 15.0) if has_exif else None,
+                    gps_passed=("gps" not in failed),
+                    timestamp_passed=("time" not in failed),
+                    duplicate_passed=("dup" not in failed),
                     perceptual_hash=None, # NULL hash so it never interferes with live duplicate checks
-                    exif_passed=(verdict == "VERIFIED"),
-                    has_exif_metadata=(verdict == "VERIFIED"),
+                    exif_passed=has_exif,
+                    has_exif_metadata=has_exif,
                     human_review_status=human_rev,
                     closed_late=closed_late,
                     late_by_hours=late_by_hours,

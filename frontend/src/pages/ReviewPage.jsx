@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ShieldAlert, ShieldCheck, RefreshCw, MapPin, Scale } from 'lucide-react';
+import { AlertCircle, ShieldAlert, ShieldCheck, RefreshCw, MapPin, Scale, Clock, History } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -8,7 +8,7 @@ import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
 import { categoryLabel } from '../constants';
-import { fetchApi, formatDateTime } from '../api';
+import { fetchApi, formatDateTime, formatHours, imageUrl } from '../api';
 
 const DECISION_STYLE = {
   'Confirmed fake': 'bg-rose-50 text-[#B42318] border-rose-200',
@@ -17,6 +17,8 @@ const DECISION_STYLE = {
 
 function ReviewCard({ item, onDecide, busy }) {
   const pending = item.human_review_status === 'PENDING';
+  // Seeded history records (for the dashboard) have no photos
+  const synthetic = !imageUrl(item.complaint_before_image_path) && !imageUrl(item.after_image_path);
   return (
     <Card className="space-y-5">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -32,10 +34,27 @@ function ReviewCard({ item, onDecide, busy }) {
         <ScoreHeader score={item.score} verdict={item.verdict} />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-5">
-        <Photo label="Before (citizen)" path={item.complaint_before_image_path} tone="amber" />
-        <Photo label="After (worker's proof)" path={item.after_image_path} tone="green" />
-      </div>
+      {synthetic ? (
+        <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-500">
+          <History className="w-4 h-4 shrink-0" />
+          Synthetic history record, generated to fill the dashboard. It has no photos.
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-5">
+          <Photo label="Before (citizen)" path={item.complaint_before_image_path} tone="amber" />
+          <Photo label="After (worker's proof)" path={item.after_image_path} tone="green" />
+        </div>
+      )}
+
+      {item.closed_late && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <Clock className="w-4 h-4 shrink-0 mt-0.5 text-[#C77700]" />
+          <span>
+            <span className="font-semibold text-[#C77700]">Closed {formatHours(item.late_by_hours)} after the deadline. </span>
+            <span className="text-slate-800">Worker's reason: {item.delay_reason}{item.delay_note ? ` - ${item.delay_note}` : ''}</span>
+          </span>
+        </div>
+      )}
 
       <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Why it was flagged</p>
