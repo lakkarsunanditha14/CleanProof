@@ -1,0 +1,13 @@
+**/node_modules
+**/venv
+**/__pycache__
+**/.env
+*.db
+frontend/dist
+frontend/certs
+tools
+data/images
+data/demo/upload/*.jpg
+.git
+*.pdf
+CleanProof_phone_QR.png
