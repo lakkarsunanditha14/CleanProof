@@ -478,6 +478,11 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
                     exif_passed=has_exif,
                     has_exif_metadata=has_exif,
                     human_review_status=human_rev,
+                    # Photo evidence consistent with the checks above (no EXIF -> nothing recorded)
+                    photo_taken_at=None if not has_exif else (
+                        c_created - timedelta(days=2) if "time" in failed else res_dt - timedelta(minutes=25)),
+                    photo_latitude=None if not has_exif else lat + (0.0077 if "gps" in failed else 0.0001),
+                    photo_longitude=None if not has_exif else lon,
                     closed_late=closed_late,
                     late_by_hours=late_by_hours,
                     delay_reason=delay_reason,

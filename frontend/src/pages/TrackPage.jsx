@@ -7,7 +7,7 @@ import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import StatusBadge from '../components/StatusBadge';
 import SlaBadge from '../components/SlaBadge';
-import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
+import { ReasonList, ScoreHeader, Photo, PhotoEvidence } from '../components/Verification';
 import { categoryLabel } from '../constants';
 import { fetchApi, parseUtc, formatDateTime, formatHours } from '../api';
 
@@ -183,7 +183,11 @@ export default function TrackPage() {
                 <h3 className="font-bold text-slate-900">Closure verification</h3>
                 <ScoreHeader score={res.score} verdict={res.verdict} />
               </div>
-              <ReasonList reasons={res.reasons} />
+              <PhotoEvidence resolution={res} complaintCreatedAt={complaint.created_at} reopenedAt={complaint.reopened_at} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">The 5 checks</p>
+                <ReasonList reasons={res.reasons} />
+              </div>
               <div className="flex items-center gap-2 text-sm rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
                 <UserCheck className="w-4 h-4 text-slate-500" />
                 <span className="text-slate-600">Human review:</span>

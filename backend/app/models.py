@@ -57,6 +57,11 @@ class Resolution(Base):
 
     human_review_status = Column(String(50), default="PENDING") # 'PENDING', 'Genuine', 'Confirmed fake'
 
+    # Evidence read from the photo file (EXIF): when and where it was actually taken
+    photo_taken_at = Column(DateTime, nullable=True)
+    photo_latitude = Column(Float, nullable=True)
+    photo_longitude = Column(Float, nullable=True)
+
     # Deadline accountability: was it closed after the deadline, by how much, and why
     closed_late = Column(Boolean, default=False)
     late_by_hours = Column(Float, nullable=True)

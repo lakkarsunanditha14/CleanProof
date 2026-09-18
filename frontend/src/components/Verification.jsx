@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle2, XCircle, MinusCircle, ImageOff, Trash2, Droplets, BrickWall, Leaf, History } from 'lucide-react';
+import { CheckCircle2, XCircle, MinusCircle, ImageOff, Trash2, Droplets, BrickWall, Leaf, History, Camera, Upload, MapPin, Fingerprint, AlertTriangle } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
-import { imageUrl, isSamplePhoto } from '../api';
+import { imageUrl, isSamplePhoto, parseUtc, formatDateTime, formatHours } from '../api';
 import { categoryLabel } from '../constants';
 
 export function SampleTag() {
@@ -103,5 +103,100 @@ export function Photo({ label, path, tone = 'slate', src, category }) {
         <CategoryArt category={category} />
       )}
     </figure>
+  );
+}
+
+function formatDistance(m) {
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+}
+
+const EVIDENCE_TONE = {
+  good: { Icon: CheckCircle2, color: 'text-emerald-600', box: 'border-emerald-200 bg-emerald-50/50' },
+  warn: { Icon: AlertTriangle, color: 'text-[#C77700]', box: 'border-amber-200 bg-amber-50/60' },
+  bad: { Icon: XCircle, color: 'text-[#B42318]', box: 'border-rose-200 bg-rose-50/50' },
+};
+
+function EvidenceRow({ icon: RowIcon, label, value, note, tone }) {
+  const t = EVIDENCE_TONE[tone];
+  return (
+    <div className={`rounded-xl border p-3.5 flex items-start gap-3 ${t.box}`}>
+      <RowIcon className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="font-semibold text-slate-900 mt-0.5">{value}</p>
+        <p className={`text-sm mt-0.5 flex items-center gap-1.5 ${t.color}`}>
+          <t.Icon className="w-4 h-4 shrink-0" /> {note}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// When and where the after photo was really taken, read from the photo file (EXIF),
+// compared with when the complaint was reported (or reopened) and when the photo was uploaded.
+export function PhotoEvidence({ resolution: r, complaintCreatedAt, reopenedAt }) {
+  const start = parseUtc(reopenedAt || complaintCreatedAt);
+  const startWord = reopenedAt ? 'reopened' : 'reported';
+  const taken = parseUtc(r.photo_taken_at);
+  const uploaded = parseUtc(r.created_at);
+  const hours = (a, b) => (a - b) / 3600000;
+
+  let takenNote;
+  let takenTone;
+  if (!taken) {
+    takenNote = 'No date inside the photo, so its age cannot be proven';
+    takenTone = 'bad';
+  } else if (start && taken < start) {
+    takenNote = `${formatHours(hours(start, taken))} BEFORE the complaint was ${startWord}`;
+    takenTone = 'bad';
+  } else {
+    takenNote = `${formatHours(hours(taken, start))} after the complaint was ${startWord}`;
+    takenTone = 'good';
+  }
+
+  let uploadNote = 'Photo age unknown';
+  let uploadTone = 'bad';
+  if (taken) {
+    const age = Math.max(0, hours(uploaded, taken));
+    uploadTone = age > 24 ? 'warn' : 'good';
+    uploadNote = age > 24
+      ? `Taken ${formatHours(age)} before upload, possibly an old photo`
+      : `Taken ${formatHours(age)} before upload (fresh)`;
+  }
+
+  const hasGps = r.photo_latitude != null;
+  const dist = r.gps_distance_meters;
+  const near = hasGps && dist != null && dist <= 50;
+  let placeNote = 'No GPS inside the photo';
+  if (hasGps) {
+    if (dist == null) placeNote = 'Distance not available';
+    else placeNote = near ? `${formatDistance(dist)} from the complaint spot` : `${formatDistance(dist)} away from the complaint spot`;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Photo evidence</p>
+        <p className="text-sm text-slate-500">Read automatically from the photo file, not typed by the worker.</p>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <EvidenceRow icon={Camera} label="Photo taken" value={taken ? formatDateTime(r.photo_taken_at) : 'Not recorded'} note={takenNote} tone={takenTone} />
+        <EvidenceRow icon={Upload} label="Uploaded" value={formatDateTime(r.created_at)} note={uploadNote} tone={uploadTone} />
+        <EvidenceRow
+          icon={MapPin}
+          label="Taken at"
+          value={hasGps ? `${r.photo_latitude.toFixed(5)}, ${r.photo_longitude.toFixed(5)}` : 'Not recorded'}
+          note={placeNote}
+          tone={near ? 'good' : 'bad'}
+        />
+        <EvidenceRow
+          icon={Fingerprint}
+          label="Camera data"
+          value={r.has_exif_metadata ? 'Present' : 'Missing'}
+          note={r.has_exif_metadata ? 'Photo carries its original camera data' : 'Typical of AI-generated, edited or downloaded images'}
+          tone={r.has_exif_metadata ? 'good' : 'bad'}
+        />
+      </div>
+    </div>
   );
 }

@@ -179,5 +179,9 @@ def run_resolution_verification_pipeline(
         "duplicate_passed": duplicate_passed,
         "perceptual_hash": after_phash,
         "exif_passed": exif_passed,
-        "has_exif_metadata": has_exif
+        "has_exif_metadata": has_exif,
+        # Evidence read from the photo file itself (None when the photo has no EXIF)
+        "photo_taken_at": exif_ts - timedelta(hours=5, minutes=30) if exif_ts else None,  # EXIF is IST, stored as UTC
+        "photo_latitude": exif_lat,
+        "photo_longitude": exif_lon,
     }

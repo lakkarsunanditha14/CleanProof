@@ -32,6 +32,9 @@ class ResolutionResponse(BaseModel):
     exif_passed: Optional[bool] = None
     has_exif_metadata: bool
     human_review_status: str
+    photo_taken_at: Optional[datetime] = None
+    photo_latitude: Optional[float] = None
+    photo_longitude: Optional[float] = None
     closed_late: bool = False
     late_by_hours: Optional[float] = None
     delay_reason: Optional[str] = None
@@ -47,6 +50,8 @@ class FlaggedResolutionResponse(ResolutionResponse):
     complaint_ward: str
     complaint_before_image_path: str
     complaint_status: str
+    complaint_created_at: datetime
+    complaint_reopened_at: Optional[datetime] = None
 
 class ReopenLogResponse(BaseModel):
     id: int

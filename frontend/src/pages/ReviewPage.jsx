@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
-import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
+import { ReasonList, ScoreHeader, Photo, PhotoEvidence } from '../components/Verification';
 import { categoryLabel } from '../constants';
 import { fetchApi, formatDateTime, formatHours, imageUrl } from '../api';
 
@@ -55,6 +55,8 @@ function ReviewCard({ item, onDecide, busy }) {
           </span>
         </div>
       )}
+
+      <PhotoEvidence resolution={item} complaintCreatedAt={item.complaint_created_at} reopenedAt={item.complaint_reopened_at} />
 
       <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Why it was flagged</p>

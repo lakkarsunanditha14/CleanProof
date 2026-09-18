@@ -29,6 +29,8 @@ def get_flagged_resolutions(db: Session = Depends(get_db)):
             complaint_ward=r.complaint.ward,
             complaint_before_image_path=r.complaint.before_image_path,
             complaint_status=r.complaint.status,
+            complaint_created_at=r.complaint.created_at,
+            complaint_reopened_at=r.complaint.reopened_at,
         )
         for r in flagged
     ]

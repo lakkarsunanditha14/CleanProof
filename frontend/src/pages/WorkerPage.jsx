@@ -9,7 +9,7 @@ import StatusBadge from '../components/StatusBadge';
 import SlaBadge from '../components/SlaBadge';
 import VerdictBadge from '../components/VerdictBadge';
 import EmptyState from '../components/EmptyState';
-import { ReasonList, ScoreHeader, Photo, CategoryArt, SampleTag } from '../components/Verification';
+import { ReasonList, ScoreHeader, Photo, CategoryArt, SampleTag, PhotoEvidence } from '../components/Verification';
 import { WARDS, DELAY_REASONS, categoryLabel } from '../constants';
 import { fetchApi, imageUrl, isSamplePhoto, parseUtc, formatHours, formatDateTime } from '../api';
 
@@ -138,6 +138,7 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
                 <h3 className="font-bold text-slate-900">Verification result</h3>
                 <ScoreHeader score={result.score} verdict={result.verdict} />
               </div>
+              <PhotoEvidence resolution={result} complaintCreatedAt={complaint.created_at} reopenedAt={complaint.reopened_at} />
               <ReasonList reasons={result.reasons} />
               <p className={`text-sm font-semibold ${result.closed_late ? 'text-[#C77700]' : 'text-emerald-700'}`}>
                 {result.closed_late
