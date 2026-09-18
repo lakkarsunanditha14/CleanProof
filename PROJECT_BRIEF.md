@@ -12,7 +12,7 @@ photos with AI, detects fraud, and shows SLA adherence + hotspots on a dashboard
 3. Resolution + verification: when "after" photo is uploaded, run checks:
    - AI vision: local CLIP model zero-shot check (is the issue still present? yes/no + confidence)
    - Same location: GPS distance between before/after < 50m (-30 pts if > 50m or missing GPS)
-   - Timestamp: after-photo time must be later than complaint time (-20 pts)
+   - Timestamp: after-photo time must be later than complaint time (-30 pts)
    - Duplicate: perceptual hash (imagehash) vs all previous after-photos (-30 pts)
    - Metadata: missing EXIF = suspicious (-10 pts)
    Output: score 0-100 + verdict: VERIFIED / SUSPICIOUS / LIKELY FAKE + reasons list

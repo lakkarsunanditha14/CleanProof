@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Camera, MapPin, X, ShieldCheck, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
@@ -149,6 +149,17 @@ export default function WorkerPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // /worker?resolve=ID opens the resolve panel for that complaint (linked from the Track page).
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const id = Number(params.get('resolve'));
+    const target = id && complaints.find((c) => c.id === id && c.status !== 'RESOLVED');
+    if (target) {
+      setSelected(target);
+      setParams({}, { replace: true });
+    }
+  }, [complaints, params, setParams]);
 
   const groups = useMemo(() => {
     const inWard = complaints.filter((c) => !ward || c.ward === ward);

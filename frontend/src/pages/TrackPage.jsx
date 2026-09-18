@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, AlertCircle, Clock, MapPin, RotateCcw, UserCheck } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
@@ -160,8 +160,11 @@ export default function TrackPage() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">After (worker)</p>
-                  <div className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-sm text-slate-500 text-center px-6">
-                    Not resolved yet. The worker uploads a photo when the issue is fixed.
+                  <div className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 text-sm text-slate-500 text-center px-6">
+                    Not resolved yet. The worker uploads a photo from the site when the issue is fixed.
+                    <Link to={`/worker?resolve=${complaint.id}`} className="font-semibold text-[#0F6E5C] hover:underline">
+                      Resolve as worker
+                    </Link>
                   </div>
                 </div>
               )}

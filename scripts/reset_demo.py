@@ -225,43 +225,40 @@ def reset_demo_database():
 
         # Write README.txt
         readme_path = upload_dir / "README.txt"
-        readme_content = f"""=== READY-TO-UPLOAD DEMO FILES FOR MUNICIPAL WORKER RESOLUTION ===
+        ids = live_complaint_ids
+        readme_content = f"""=== CLEANPROOF LIVE DEMO: WHAT TO UPLOAD, IN THIS ORDER ===
+Run scripts/reset_demo.py right before the demo. It regenerates these photos
+with fresh timestamps, so they only match the complaints from that reset.
+Upload on the Worker page (Resolve button on the complaint card).
 
-1. genuine_after_1.jpg -> Upload to Complaint #{live_complaint_ids[0]} (Ameerpet - garbage dump)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 1  Genuine clean-up
+  Upload genuine_after_1.jpg to complaint #{ids[0]} (Ameerpet)
+  Expected: 100/100 VERIFIED (all 5 checks pass)
 
-2. genuine_after_2.jpg -> Upload to Complaint #{live_complaint_ids[1]} (Kukatpally - blocked drain)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 2  Dirty photo re-uploaded as "proof"
+  Upload fake_reused_dirty_2.jpg to complaint #{ids[1]} (Kukatpally)
+  Expected: 20/100 LIKELY FAKE
+  (CLIP: problem not reduced -50, photo older than the complaint -30)
 
-3. genuine_after_3.jpg -> Upload to Complaint #{live_complaint_ids[2]} (Madhapur - construction debris)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 3  Citizen reopens
+  Track page, complaint #{ids[1]}: Reopen with any photo
+  Expected: status REOPENED, deadline restarts
 
-4. genuine_after_4.jpg -> Upload to Complaint #{live_complaint_ids[3]} (Secunderabad - unswept street)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 4  AI-generated "clean" photo (no camera data)
+  Upload fake_ai_clean_for_6.jpg to complaint #{ids[5]} (Mehdipatnam)
+  Expected: 30/100 LIKELY FAKE (no GPS -30, no timestamp -30, no EXIF -10)
+  Then on the Review page click "Confirmed fake"
 
-5. genuine_after_5.jpg -> Upload to Complaint #{live_complaint_ids[4]} (Dilsukhnagar - garbage dump)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 5  Real clean photo from a different place
+  Upload fake_wrong_place_for_1.jpg to complaint #{ids[4]} (Dilsukhnagar)
+  Expected: 70/100 SUSPICIOUS (photo taken km away from the complaint -30)
 
-6. genuine_after_6.jpg -> Upload to Complaint #{live_complaint_ids[5]} (Mehdipatnam - garbage dump, Near Deadline)
-   Expected Verdict: VERIFIED (Score >= 75)
-   Details: Clean after-photo, EXIF GPS within 8m, valid IST timestamp.
+STEP 6  Dashboard
+  Show the hotspots: Dilsukhnagar (fake closures) and Kukatpally (missed deadlines)
 
-7. fake_reused_dirty_2.jpg -> Upload to Complaint #{live_complaint_ids[1]} (Kukatpally)
-   Expected Verdict: LIKELY FAKE / SUSPICIOUS (Score < 40)
-   Details: Re-uploaded dirty before photo (-50 pts), duplicate hash (-30 pts), timestamp earlier than complaint (-20 pts).
-
-8. fake_wrong_place_for_1.jpg -> Upload to Complaint #{live_complaint_ids[0]} (Ameerpet)
-   Expected Verdict: SUSPICIOUS / LIKELY FAKE
-   Details: Photo location in Madhapur >5 km away (location penalty -30 pts).
-
-9. fake_ai_clean_for_6.jpg -> Upload to Complaint #{live_complaint_ids[5]} (Mehdipatnam)
-   Expected Verdict: LIKELY FAKE (Score < 40)
-   Details: Missing EXIF metadata (-10 pts), missing GPS (-30 pts), missing timestamp (-20 pts).
+Other files: genuine_after_2..6.jpg are genuine clean-ups for complaints #{ids[1]}..#{ids[5]}.
+Note: fake_wrong_place_for_1.jpg is the same photo as genuine_after_3.jpg,
+so whichever of the two is uploaded second is also flagged as a duplicate (-30).
 """
         with open(readme_path, "w", encoding="utf-8") as f:
             f.write(readme_content)

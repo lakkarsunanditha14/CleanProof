@@ -283,7 +283,7 @@ export default function HomePage() {
 
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
-            Score starts at 100: issue still visible -50, wrong or missing location -30, duplicate photo -30, invalid or missing time -20, no camera metadata -10.
+            Score starts at 100: issue still visible -50, wrong or missing location -30, duplicate photo -30, photo older than the complaint or missing time -30, no camera metadata -10.
           </p>
           <Link to="/review">
             <Button variant="outline" size="sm" icon={ArrowRight}>

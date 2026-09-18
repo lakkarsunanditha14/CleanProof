@@ -23,7 +23,7 @@ def run_resolution_verification_pipeline(
     - Base score: 100
     - AI Vision (CLIP) problem not reduced: -50 pts
     - GPS distance between before and after > 50m: -30 pts (Missing EXIF GPS: -30 pts)
-    - After-photo timestamp earlier than complaint/reopen time: -20 pts (Missing EXIF Timestamp: -20 pts)
+    - After-photo timestamp earlier than complaint/reopen time: -30 pts (Missing EXIF Timestamp: -30 pts)
     - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
     - Missing EXIF metadata: -10 pts
     - Minimum score: 0
@@ -88,7 +88,7 @@ def run_resolution_verification_pipeline(
     else:
         # Missing EXIF GPS metadata
         score -= 30
-        reasons.append("Location cannot be verified: photo has no GPS data")
+        reasons.append("Location cannot be verified: photo has no GPS data (-30 pts)")
 
     # CHECK 3: Timestamp Order Check - EXIF ONLY (IST UTC+5:30 conversion)
     timestamp_passed = False
@@ -102,18 +102,18 @@ def run_resolution_verification_pipeline(
         compare_time = complaint.reopened_at if (is_reopened and complaint.reopened_at) else complaint.created_at
 
         if exif_ts_utc < compare_time:
-            score -= 20
+            score -= 30
             if is_reopened and complaint.reopened_at:
-                reasons.append("Timestamp: After-photo was taken before the complaint was reopened (-20 pts)")
+                reasons.append("Timestamp: After-photo was taken before the complaint was reopened (-30 pts)")
             else:
-                reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({(complaint.created_at + timedelta(hours=5, minutes=30)).strftime('%Y-%m-%d %H:%M')} IST) (-20 pts)")
+                reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({(complaint.created_at + timedelta(hours=5, minutes=30)).strftime('%Y-%m-%d %H:%M')} IST) (-30 pts)")
         else:
             timestamp_passed = True
             reasons.append("Timestamp: After-photo timestamp is later than complaint time (Pass)")
     else:
         # Missing EXIF timestamp
-        score -= 20
-        reasons.append("Time cannot be verified: photo has no timestamp")
+        score -= 30
+        reasons.append("Time cannot be verified: photo has no timestamp (-30 pts)")
 
     # CHECK 4: Duplicate Image Check (imagehash distance <= 5, ignores null/empty hashes)
     duplicate_passed = True
