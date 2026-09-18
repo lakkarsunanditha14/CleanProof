@@ -18,6 +18,7 @@ class Complaint(Base):
     before_has_exif = Column(Boolean, default=False)
     status = Column(String(50), default="OPEN")     # 'OPEN', 'RESOLVED', 'REOPENED'
     created_at = Column(DateTime, default=datetime.utcnow)
+    reopened_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     sla_hours = Column(Integer, nullable=False)
     sla_deadline = Column(DateTime, nullable=False)

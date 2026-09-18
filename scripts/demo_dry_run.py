@@ -78,16 +78,19 @@ def run_demo_dry_run():
         "reasons": res2["reasons"]
     })
 
-    # 3. Reopen #2 with photo, then resolve #2 with genuine_after_2.jpg
-    reopen_via_api(2, "genuine_after_2.jpg", reason="Issue was not actually cleaned initially")
-    res2_gen = resolve_via_api(2, "genuine_after_2.jpg")
+    # 3. Reopen #2 with photo (status becomes REOPENED, SLA clock restarts)
+    reopen_res = reopen_via_api(2, "genuine_after_2.jpg", reason="Issue was not actually cleaned initially")
     dry_run_records.append({
         "step": "3",
-        "complaint": "Complaint #2 (Reopened & Resolved)",
+        "complaint": "Complaint #2 (Reopened by citizen)",
         "file": "genuine_after_2.jpg",
-        "score": res2_gen["score"],
-        "verdict": res2_gen["verdict"],
-        "reasons": res2_gen["reasons"]
+        "score": "N/A",
+        "verdict": reopen_res["status"],
+        "reasons": [
+            f"Status updated to {reopen_res['status']} (Reopen count: {reopen_res['reopen_count']})",
+            f"Reopened At: {reopen_res['reopened_at']}",
+            "SLA Clock restarted based on reopened_at timestamp"
+        ]
     })
 
     # 4. Resolve #6 with fake_ai_clean_for_6.jpg, then review it as "Confirmed fake"

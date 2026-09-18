@@ -1,15 +1,23 @@
 from datetime import datetime, timedelta
+from typing import Optional
 from app.config import SLA_HOURS
 from app.schemas import SLAStatusSchema
 
 def get_category_sla_hours(category: str) -> int:
     return SLA_HOURS.get(category.lower(), 24)
 
-def calculate_sla_info(created_at: datetime, sla_hours: int, current_status: str = "OPEN", resolution_time: datetime = None) -> SLAStatusSchema:
-    deadline = created_at + timedelta(hours=sla_hours)
+def calculate_sla_info(
+    created_at: datetime,
+    sla_hours: int,
+    current_status: str = "OPEN",
+    resolution_time: Optional[datetime] = None,
+    reopened_at: Optional[datetime] = None
+) -> SLAStatusSchema:
+    start_time = reopened_at or created_at
+    deadline = start_time + timedelta(hours=sla_hours)
     reference_time = resolution_time if (current_status == "RESOLVED" and resolution_time) else datetime.utcnow()
     
-    elapsed_seconds = (reference_time - created_at).total_seconds()
+    elapsed_seconds = (reference_time - start_time).total_seconds()
     hours_elapsed = round(max(0.0, elapsed_seconds / 3600.0), 2)
     
     remaining_seconds = (deadline - reference_time).total_seconds()

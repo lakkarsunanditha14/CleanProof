@@ -51,6 +51,7 @@ def _format_complaint_response(complaint: Complaint) -> ComplaintResponse:
         before_has_exif=complaint.before_has_exif,
         status=complaint.status,
         created_at=complaint.created_at,
+        reopened_at=complaint.reopened_at,
         updated_at=complaint.updated_at,
         sla_hours=complaint.sla_hours,
         sla_deadline=complaint.sla_deadline,
@@ -321,7 +322,7 @@ async def reopen_complaint(
     now = datetime.utcnow()
     complaint.status = "REOPENED"
     complaint.reopen_count += 1
-    complaint.created_at = now  # Restart SLA clock!
+    complaint.reopened_at = now
     complaint.updated_at = now
     complaint.sla_deadline = now + timedelta(hours=complaint.sla_hours)
 

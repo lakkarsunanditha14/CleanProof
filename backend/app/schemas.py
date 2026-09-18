@@ -68,6 +68,7 @@ class ComplaintResponse(BaseModel):
     before_has_exif: bool
     status: str
     created_at: datetime
+    reopened_at: Optional[datetime] = None
     updated_at: datetime
     sla_hours: int
     sla_deadline: datetime
@@ -89,6 +90,7 @@ class ComplaintListItem(BaseModel):
     longitude: float
     status: str
     created_at: datetime
+    reopened_at: Optional[datetime] = None
     sla_hours: int
     sla_deadline: datetime
     sla_status: str

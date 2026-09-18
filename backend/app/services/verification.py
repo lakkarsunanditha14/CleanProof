@@ -23,7 +23,7 @@ def run_resolution_verification_pipeline(
     - Base score: 100
     - AI Vision (CLIP) problem not reduced: -50 pts
     - GPS distance between before and after > 50m: -30 pts (Missing EXIF GPS: -30 pts)
-    - After-photo timestamp earlier than complaint time: -20 pts (Missing EXIF Timestamp: -20 pts)
+    - After-photo timestamp earlier than complaint/reopen time: -20 pts (Missing EXIF Timestamp: -20 pts)
     - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
     - Missing EXIF metadata: -10 pts
     - Minimum score: 0
@@ -95,12 +95,18 @@ def run_resolution_verification_pipeline(
 
     if exif_ts is not None:
         # EXIF DateTimeOriginal is local Indian time (IST, UTC+5:30)
-        # Convert EXIF timestamp to UTC before comparing with complaint.created_at
+        # Convert EXIF timestamp to UTC before comparing with start time
         exif_ts_utc = exif_ts - timedelta(hours=5, minutes=30)
 
-        if exif_ts_utc < complaint.created_at:
+        is_reopened = (complaint.status == "REOPENED") or (complaint.reopened_at is not None)
+        compare_time = complaint.reopened_at if (is_reopened and complaint.reopened_at) else complaint.created_at
+
+        if exif_ts_utc < compare_time:
             score -= 20
-            reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({complaint.created_at.strftime('%Y-%m-%d %H:%M')} UTC) (-20 pts)")
+            if is_reopened and complaint.reopened_at:
+                reasons.append("Timestamp: After-photo was taken before the complaint was reopened (-20 pts)")
+            else:
+                reasons.append(f"Timestamp: After-photo timestamp ({exif_ts.strftime('%Y-%m-%d %H:%M')} IST) is earlier than complaint creation time ({complaint.created_at.strftime('%Y-%m-%d %H:%M')} UTC) (-20 pts)")
         else:
             timestamp_passed = True
             reasons.append("Timestamp: After-photo timestamp is later than complaint time (Pass)")
