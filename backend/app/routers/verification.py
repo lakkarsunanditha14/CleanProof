@@ -5,11 +5,11 @@ from sqlalchemy import desc
 
 from app.database import get_db
 from app.models import Resolution, Complaint
-from app.schemas import ResolutionResponse, HumanReviewRequest
+from app.schemas import ResolutionResponse, FlaggedResolutionResponse, HumanReviewRequest
 
 router = APIRouter(prefix="/api/verification", tags=["Verification"])
 
-@router.get("/flagged", response_model=List[ResolutionResponse])
+@router.get("/flagged", response_model=List[FlaggedResolutionResponse])
 def get_flagged_resolutions(db: Session = Depends(get_db)):
     """
     Returns list of resolutions flagged as SUSPICIOUS or LIKELY FAKE
@@ -21,7 +21,17 @@ def get_flagged_resolutions(db: Session = Depends(get_db)):
         .order_by(desc(Resolution.created_at))
         .all()
     )
-    return [ResolutionResponse.model_validate(r) for r in flagged]
+    return [
+        FlaggedResolutionResponse(
+            **ResolutionResponse.model_validate(r).model_dump(),
+            complaint_title=r.complaint.title,
+            complaint_category=r.complaint.category,
+            complaint_ward=r.complaint.ward,
+            complaint_before_image_path=r.complaint.before_image_path,
+            complaint_status=r.complaint.status,
+        )
+        for r in flagged
+    ]
 
 
 @router.post("/{resolution_id}/review", response_model=ResolutionResponse)

@@ -37,6 +37,13 @@ class ResolutionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class FlaggedResolutionResponse(ResolutionResponse):
+    complaint_title: str
+    complaint_category: str
+    complaint_ward: str
+    complaint_before_image_path: str
+    complaint_status: str
+
 class ReopenLogResponse(BaseModel):
     id: int
     complaint_id: int

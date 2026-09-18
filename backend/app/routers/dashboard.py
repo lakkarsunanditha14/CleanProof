@@ -13,6 +13,11 @@ from app.schemas import (
 )
 from app.services.sla_service import calculate_sla_info
 
+def is_false_closure(r) -> bool:
+    """A flagged closure counts as false unless a human reviewer marked it Genuine."""
+    return r.verdict in ["SUSPICIOUS", "LIKELY FAKE"] and r.human_review_status != "Genuine"
+
+
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/stats", response_model=DashboardStatsResponse)
@@ -55,7 +60,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     resolutions = db.query(Resolution).all()
     false_closures_count = sum(
         1 for r in resolutions 
-        if r.verdict in ["SUSPICIOUS", "LIKELY FAKE"] or r.human_review_status == "Confirmed fake"
+        if is_false_closure(r)
     )
     
     flagged_pending_review_count = sum(
@@ -106,9 +111,7 @@ def get_sla_by_ward(db: Session = Depends(get_db)):
         ward_complaint_ids = {c.id for c in ward_complaints}
         false_closures = sum(
             1 for r in resolutions 
-            if r.complaint_id in ward_complaint_ids and (
-                r.verdict in ["SUSPICIOUS", "LIKELY FAKE"] or r.human_review_status == "Confirmed fake"
-            )
+            if r.complaint_id in ward_complaint_ids and is_false_closure(r)
         )
 
         results.append(
@@ -182,9 +185,8 @@ def get_false_closures_stat(db: Session = Depends(get_db)):
         
         suspicious_cnt = sum(1 for r in ward_resolutions if r.verdict == "SUSPICIOUS")
         fake_cnt = sum(1 for r in ward_resolutions if r.verdict == "LIKELY FAKE")
-        confirmed_fake_cnt = sum(1 for r in ward_resolutions if r.human_review_status == "Confirmed fake")
         
-        total_false_closures = suspicious_cnt + fake_cnt + confirmed_fake_cnt
+        total_false_closures = sum(1 for r in ward_resolutions if is_false_closure(r))
 
         results.append(
             FalseClosureStat(

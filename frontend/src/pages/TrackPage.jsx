@@ -1,56 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  Search, AlertCircle, CheckCircle2, XCircle, MinusCircle, Clock, MapPin, RotateCcw, ImageOff, UserCheck,
-} from 'lucide-react';
+import { Search, AlertCircle, Clock, MapPin, RotateCcw, UserCheck } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import StatusBadge from '../components/StatusBadge';
 import SlaBadge from '../components/SlaBadge';
-import VerdictBadge from '../components/VerdictBadge';
+import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
 import { categoryLabel } from '../constants';
-import { fetchApi, imageUrl, parseUtc, formatDateTime, formatHours } from '../api';
-
-// Reasons end with "(Pass)" or "(-NN pts)"; anything else (e.g. check unavailable) is neutral.
-function reasonKind(reason) {
-  if (/\(Pass\)/i.test(reason)) return 'pass';
-  if (/-\d+\s*pts/i.test(reason)) return 'fail';
-  return 'neutral';
-}
-
-function Reason({ text }) {
-  const kind = reasonKind(text);
-  const Icon = kind === 'pass' ? CheckCircle2 : kind === 'fail' ? XCircle : MinusCircle;
-  const color = kind === 'pass' ? 'text-emerald-600' : kind === 'fail' ? 'text-[#B42318]' : 'text-slate-400';
-  return (
-    <li className="flex items-start gap-2.5 text-sm text-slate-700">
-      <Icon className={`w-4.5 h-4.5 shrink-0 mt-0.5 ${color}`} />
-      <span>{text}</span>
-    </li>
-  );
-}
-
-function Photo({ label, path, tone = 'slate' }) {
-  const url = imageUrl(path);
-  const ring = tone === 'green' ? 'border-emerald-200' : tone === 'amber' ? 'border-amber-200' : 'border-slate-200';
-  return (
-    <figure className="space-y-2">
-      <figcaption className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</figcaption>
-      {url ? (
-        <a href={url} target="_blank" rel="noreferrer">
-          <img src={url} alt={label} className={`w-full aspect-[4/3] object-cover rounded-xl border-2 ${ring}`} />
-        </a>
-      ) : (
-        <div className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400 text-sm">
-          <ImageOff className="w-8 h-8 mb-2" />
-          No photo (synthetic record)
-        </div>
-      )}
-    </figure>
-  );
-}
+import { fetchApi, parseUtc, formatDateTime, formatHours } from '../api';
 
 // Live time left, recalculated every 30 seconds for open complaints.
 function useNow(active) {
@@ -213,14 +172,9 @@ export default function TrackPage() {
             <Card className="space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="font-bold text-slate-900">Closure verification</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-extrabold text-slate-900">{res.score}<span className="text-base text-slate-400">/100</span></span>
-                  <VerdictBadge verdict={res.verdict} />
-                </div>
+                <ScoreHeader score={res.score} verdict={res.verdict} />
               </div>
-              <ul className="space-y-2.5">
-                {res.reasons.map((r) => <Reason key={r} text={r} />)}
-              </ul>
+              <ReasonList reasons={res.reasons} />
               <div className="flex items-center gap-2 text-sm rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
                 <UserCheck className="w-4 h-4 text-slate-500" />
                 <span className="text-slate-600">Human review:</span>

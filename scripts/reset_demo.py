@@ -454,7 +454,7 @@ def reset_demo_database():
             ward_c_ids = {c.id for c in all_c if c.ward == w}
             ward_false_closures[w] = sum(
                 1 for r in all_r 
-                if r.complaint_id in ward_c_ids and (r.verdict in ["SUSPICIOUS", "LIKELY FAKE"] or r.human_review_status == "Confirmed fake")
+                if r.complaint_id in ward_c_ids and r.verdict in ["SUSPICIOUS", "LIKELY FAKE"] and r.human_review_status != "Genuine"
             )
             
             ward_on_time[w] = 0

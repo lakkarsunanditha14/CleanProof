@@ -1,0 +1,256 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Camera, MapPin, X, ShieldCheck, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import Spinner from '../components/Spinner';
+import StatusBadge from '../components/StatusBadge';
+import SlaBadge from '../components/SlaBadge';
+import VerdictBadge from '../components/VerdictBadge';
+import EmptyState from '../components/EmptyState';
+import { ReasonList, ScoreHeader, Photo } from '../components/Verification';
+import { WARDS, categoryLabel } from '../constants';
+import { fetchApi, imageUrl, parseUtc, formatHours, formatDateTime } from '../api';
+
+const TABS = [
+  { key: 'due', label: 'Due' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'closed', label: 'Closed' },
+];
+
+function hoursLeft(c) {
+  return (parseUtc(c.sla_deadline) - Date.now()) / 3600000;
+}
+
+function ResolvePanel({ complaint, onClose, onResolved }) {
+  const [photo, setPhoto] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+
+  function handlePhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto(file);
+    setPreview(URL.createObjectURL(file));
+  }
+
+  async function submit() {
+    if (!photo) return setError('Add the after photo first.');
+    setError('');
+    setSubmitting(true);
+    const form = new FormData();
+    form.append('photo', photo);
+    try {
+      const res = await fetchApi(`/api/complaints/${complaint.id}/resolve`, { method: 'POST', body: form });
+      setResult(res);
+      onResolved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[1000] bg-slate-900/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-200">
+          <div>
+            <p className="text-sm font-semibold text-slate-500">Complaint #{complaint.id}</p>
+            <h2 className="text-xl font-bold text-slate-900">{complaint.title}</h2>
+            <p className="text-sm text-slate-600 flex items-center gap-1.5 mt-1">
+              <MapPin className="w-4 h-4" /> {complaint.ward} &middot; {categoryLabel(complaint.category)}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Close">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Photo label="Before (citizen)" path={complaint.before_image_path} tone="amber" />
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">After (your photo)</p>
+              <label className={`block ${result ? '' : 'cursor-pointer'}`}>
+                <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="sr-only" disabled={!!result} />
+                {preview ? (
+                  <img src={preview} alt="After" className="w-full aspect-[4/3] object-cover rounded-xl border-2 border-emerald-200" />
+                ) : (
+                  <div className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-center hover:border-[#0F6E5C] hover:bg-emerald-50/40 transition-colors">
+                    <Camera className="w-9 h-9 text-slate-400" />
+                    <p className="mt-2 font-medium text-slate-700">Take or upload the after photo</p>
+                    <p className="text-xs text-slate-500 mt-1">Photo must be taken at the site, after the clean-up</p>
+                  </div>
+                )}
+              </label>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-[#B42318]">
+              <AlertCircle className="w-5 h-5 shrink-0" /> {error}
+            </div>
+          )}
+
+          {!result ? (
+            <Button size="lg" icon={submitting ? undefined : ShieldCheck} onClick={submit} disabled={submitting || !photo} className="w-full">
+              {submitting ? <><Spinner size="sm" className="border-white border-t-transparent" /> Running 5 verification checks...</> : 'Mark resolved and verify'}
+            </Button>
+          ) : (
+            <div className={`rounded-2xl border-2 p-5 space-y-4 ${result.verdict === 'VERIFIED' ? 'border-emerald-200 bg-emerald-50/40' : result.verdict === 'SUSPICIOUS' ? 'border-amber-200 bg-amber-50/40' : 'border-rose-200 bg-rose-50/40'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 className="font-bold text-slate-900">Verification result</h3>
+                <ScoreHeader score={result.score} verdict={result.verdict} />
+              </div>
+              <ReasonList reasons={result.reasons} />
+              <p className="text-sm text-slate-600">
+                {result.verdict === 'VERIFIED'
+                  ? 'Closure accepted.'
+                  : 'This closure has been sent to a human reviewer. No action is taken automatically.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={onClose}>Back to task queue</Button>
+                {result.verdict !== 'VERIFIED' && (
+                  <Link to="/review"><Button variant="outline" icon={ArrowRight} className="w-full">Open review queue</Button></Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function WorkerPage() {
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [tab, setTab] = useState('due');
+  const [ward, setWard] = useState('');
+  const [selected, setSelected] = useState(null);
+
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      setComplaints(await fetchApi('/api/complaints'));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const groups = useMemo(() => {
+    const inWard = complaints.filter((c) => !ward || c.ward === ward);
+    const open = inWard.filter((c) => c.status !== 'RESOLVED');
+    const byDeadline = (a, b) => parseUtc(a.sla_deadline) - parseUtc(b.sla_deadline);
+    return {
+      due: open.filter((c) => hoursLeft(c) >= 0).sort(byDeadline),
+      overdue: open.filter((c) => hoursLeft(c) < 0).sort(byDeadline),
+      closed: inWard.filter((c) => c.status === 'RESOLVED'),
+    };
+  }, [complaints, ward]);
+
+  const list = groups[tab];
+
+  return (
+    <div>
+      <PageHeader title="Worker task queue" subtitle="Fix the issue, then upload an after photo taken at the site. Every closure is verified automatically.">
+        <Button variant="outline" icon={RefreshCw} onClick={load}>Refresh</Button>
+      </PageHeader>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              {t.label}
+              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-md ${t.key === 'overdue' ? 'bg-rose-100 text-[#B42318]' : 'bg-slate-200 text-slate-700'}`}>
+                {groups[t.key].length}
+              </span>
+            </button>
+          ))}
+        </div>
+        <select
+          value={ward}
+          onChange={(e) => setWard(e.target.value)}
+          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-[#0F6E5C] focus:outline-none"
+        >
+          <option value="">All wards</option>
+          {WARDS.map((w) => <option key={w.name} value={w.name}>{w.name}</option>)}
+        </select>
+      </div>
+
+      {loading && <Card className="flex justify-center py-16"><Spinner size="lg" /></Card>}
+      {!loading && error && (
+        <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-[#B42318]">
+          <AlertCircle className="w-5 h-5 shrink-0" /> {error}
+        </div>
+      )}
+      {!loading && !error && list.length === 0 && <EmptyState title="Nothing here" description="No complaints in this list." />}
+
+      {!loading && !error && list.length > 0 && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {list.map((c) => {
+            const left = hoursLeft(c);
+            const img = imageUrl(c.before_image_path);
+            return (
+              <Card key={c.id} hover padding="p-0" className="overflow-hidden flex flex-col">
+                {img ? (
+                  <img src={img} alt="" className="w-full aspect-[16/9] object-cover" />
+                ) : (
+                  <div className="w-full aspect-[16/9] bg-slate-100 flex items-center justify-center text-xs text-slate-400">No photo (synthetic record)</div>
+                )}
+                <div className="p-5 flex flex-col gap-3 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-500">#{c.id} &middot; {c.ward}</span>
+                    {c.status === 'RESOLVED' ? <VerdictBadge verdict={c.latest_verdict} /> : <SlaBadge slaStatus={c.sla_status} />}
+                  </div>
+                  <h3 className="font-bold text-slate-900 leading-snug">{c.title}</h3>
+                  <p className="text-sm text-slate-600">{categoryLabel(c.category)}</p>
+                  <div className="mt-auto pt-2 flex items-center justify-between gap-3">
+                    {c.status === 'RESOLVED' ? (
+                      <>
+                        <span className="text-sm text-slate-600">Score <b className="text-slate-900">{c.latest_score}</b>/100</span>
+                        <Link to={`/track?id=${c.id}`} className="text-sm font-semibold text-[#0F6E5C] hover:underline">Details</Link>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`text-sm font-semibold ${left < 0 ? 'text-[#B42318]' : left < c.sla_hours * 0.25 ? 'text-[#C77700]' : 'text-slate-700'}`}>
+                          {left >= 0 ? `${formatHours(left)} left` : `Overdue ${formatHours(left)}`}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {c.status === 'REOPENED' && <StatusBadge status="REOPENED" />}
+                          <Button size="sm" icon={Camera} onClick={() => setSelected(c)}>Resolve</Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {c.status !== 'RESOLVED' && (
+                    <p className="text-xs text-slate-400">Due {formatDateTime(c.sla_deadline)}</p>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {selected && <ResolvePanel complaint={selected} onClose={() => setSelected(null)} onResolved={load} />}
+    </div>
+  );
+}
