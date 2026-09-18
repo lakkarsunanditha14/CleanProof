@@ -10,6 +10,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 
 from app.main import app
 from app.database import Base, get_db
+from app.config import VALID_WARDS
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -127,7 +128,7 @@ def test_full_backend_workflow():
         res = client.get("/api/dashboard/sla-by-ward")
         assert res.status_code == 200
         ward_breakdown = res.json()
-        assert len(ward_breakdown) == 8
+        assert len(ward_breakdown) == len(VALID_WARDS)
         print(f"[PASS] GET /api/dashboard/sla-by-ward ({len(ward_breakdown)} wards)")
 
         res = client.get("/api/dashboard/sla-by-category")
@@ -139,7 +140,7 @@ def test_full_backend_workflow():
         res = client.get("/api/dashboard/false-closures")
         assert res.status_code == 200
         fc_stats = res.json()
-        assert len(fc_stats) == 8
+        assert len(fc_stats) == len(VALID_WARDS)
         print(f"[PASS] GET /api/dashboard/false-closures")
 
         res = client.get("/api/dashboard/map-data")
