@@ -12,6 +12,7 @@ from pathlib import Path
 from huggingface_hub import HfApi
 
 ROOT = Path(__file__).resolve().parents[1]
+SPACE_OWNER = "cleanproof-team"  # organization; set to None to use your own username
 SPACE_NAME = "cleanproof"
 
 # Local-only or generated files that must not be uploaded
@@ -25,8 +26,8 @@ IGNORE = [
 
 def main() -> None:
     api = HfApi()
-    user = api.whoami()["name"]
-    repo_id = f"{user}/{SPACE_NAME}"
+    owner = SPACE_OWNER or api.whoami()["name"]
+    repo_id = f"{owner}/{SPACE_NAME}"
 
     api.create_repo(repo_id, repo_type="space", space_sdk="docker", exist_ok=True)
     print(f"Uploading to Space {repo_id} ...")
@@ -38,7 +39,7 @@ def main() -> None:
         commit_message="Deploy CleanProof",
     )
 
-    subdomain = re.sub(r"[^a-z0-9]+", "-", f"{user}-{SPACE_NAME}".lower()).strip("-")
+    subdomain = re.sub(r"[^a-z0-9]+", "-", f"{owner}-{SPACE_NAME}".lower()).strip("-")
     print("\nUploaded. The Space now builds (about 5-10 minutes the first time).")
     print(f"  Build progress: https://huggingface.co/spaces/{repo_id}")
     print(f"  App link:       https://{subdomain}.hf.space   <- share this one (camera works here)")
