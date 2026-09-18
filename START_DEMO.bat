@@ -23,6 +23,6 @@ start "CleanProof public link" cmd /k "cd /d "%~dp0" && backend\venv\Scripts\pyt
 echo.
 echo CleanProof is starting:
 echo   - Laptop:  https://localhost:5173  (opened in Edge)
-echo   - Phones:  the public link and QR code appear in the "public link" window
+echo   - Phones:  https://25215a6610-cleanproof.static.hf.space  (permanent link, same QR every time)
 echo.
 pause
