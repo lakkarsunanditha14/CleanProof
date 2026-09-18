@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Database
+*.db
+*.sqlite3
+
+# Environment
+.env
+
+# Dependencies
+node_modules/
+dist/
+build/
+
+# Stored images (keep directory structure)
+data/images/*
+!data/images/.gitkeep
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
