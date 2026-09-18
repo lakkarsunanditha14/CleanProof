@@ -7,7 +7,7 @@ import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import SlaBadge from '../components/SlaBadge';
 import CameraCapture from '../components/CameraCapture';
-import { CATEGORIES, WARDS, categoryLabel } from '../constants';
+import { CATEGORIES, WARDS, categoryLabel, wardLabel } from '../constants';
 import { fetchApi, formatDateTime } from '../api';
 
 const inputClass =
@@ -223,7 +223,7 @@ export default function ReportPage() {
             <Field label="Ward">
               <select className={inputClass} value={ward} onChange={(e) => setWard(e.target.value)}>
                 {WARDS.map((w) => (
-                  <option key={w.name} value={w.name}>{w.name}</option>
+                  <option key={w.name} value={w.name}>{wardLabel(w)}</option>
                 ))}
               </select>
             </Field>

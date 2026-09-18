@@ -11,7 +11,7 @@ import VerdictBadge from '../components/VerdictBadge';
 import EmptyState from '../components/EmptyState';
 import CameraCapture from '../components/CameraCapture';
 import { ReasonList, ScoreHeader, Photo, CategoryArt, SampleTag, PhotoEvidence } from '../components/Verification';
-import { WARDS, DELAY_REASONS, categoryLabel } from '../constants';
+import { WARDS, DELAY_REASONS, categoryLabel, wardLabel } from '../constants';
 import { fetchApi, imageUrl, isSamplePhoto, parseUtc, formatHours, formatDateTime } from '../api';
 
 const TABS = [
@@ -279,7 +279,7 @@ export default function WorkerPage() {
           className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-[#0F6E5C] focus:outline-none"
         >
           <option value="">All wards</option>
-          {WARDS.map((w) => <option key={w.name} value={w.name}>{w.name}</option>)}
+          {WARDS.map((w) => <option key={w.name} value={w.name}>{wardLabel(w)}</option>)}
         </select>
       </div>
 

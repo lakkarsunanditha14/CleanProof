@@ -109,7 +109,7 @@ export default function DashboardPage() {
   const derived = useMemo(() => {
     if (!data) return null;
     const centre = Object.fromEntries(WARDS.map((w) => [w.name, [w.lat, w.lng]]));
-    const wards = data.wards.map((w) => ({
+    const wards = data.wards.filter((w) => w.total > 0).map((w) => ({
       ...w,
       centre: centre[w.ward],
       hotspot: w.adherence_percent < 50 || w.false_closures >= 8,
@@ -120,6 +120,11 @@ export default function DashboardPage() {
       byFalse: [...wards].sort((a, b) => b.false_closures - a.false_closures),
       categories: data.categories.map((c) => ({ ...c, name: `${categoryLabel(c.category)} (${c.sla_hours}h)` })),
       maxFalse: Math.max(1, ...wards.map((w) => w.false_closures)),
+      // Fit the map to every complaint (e.g. Narsapur is ~45 km outside Hyderabad)
+      bounds: [
+        [Math.min(...data.points.map((p) => p.latitude)), Math.min(...data.points.map((p) => p.longitude))],
+        [Math.max(...data.points.map((p) => p.latitude)), Math.max(...data.points.map((p) => p.longitude))],
+      ],
       delays: data.delays.map((d) => ({ ...d, label: SHORT_REASON[d.reason] || d.reason })),
     };
   }, [data]);
@@ -164,7 +169,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="isolate rounded-xl overflow-hidden border border-slate-200" style={{ height: 480 }}>
-              <MapContainer center={[17.42, 78.47]} zoom={11} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+              <MapContainer bounds={derived.bounds} boundsOptions={{ padding: [30, 30] }} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

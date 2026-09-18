@@ -15,7 +15,12 @@ export const WARDS = [
   { name: 'Mehdipatnam', lat: 17.395, lng: 78.44 },
   { name: 'Begumpet', lat: 17.4447, lng: 78.4664 },
   { name: 'LB Nagar', lat: 17.3457, lng: 78.5522 },
+  { name: 'Narsapur', lat: 17.7375, lng: 78.2842, district: 'Medak' }, // approximate town centre
 ];
+
+export function wardLabel(w) {
+  return w.district ? `${w.name} (${w.district} district)` : w.name;
+}
 
 export function categoryLabel(value) {
   return CATEGORIES.find((c) => c.value === value)?.label || value;

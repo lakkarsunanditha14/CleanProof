@@ -56,5 +56,6 @@ VALID_WARDS = [
     "Dilsukhnagar",
     "Mehdipatnam",
     "Begumpet",
-    "LB Nagar"
+    "LB Nagar",
+    "Narsapur",  # Medak district (outside Hyderabad), demo venue
 ]
