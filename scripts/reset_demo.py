@@ -134,16 +134,16 @@ def reset_demo_database():
                 "before_file": "before_1.jpg"
             },
             {
-                "title": "Clogged drainage pipe causing waterlogging in Kukatpally Phase 3",
-                "category": "blocked drain",
+                "title": "Broken bricks and concrete debris dumped on footpath in Kukatpally Phase 3",
+                "category": "construction debris",
                 "ward": "Kukatpally",
                 "lat": 17.4950, "lon": 78.3998,
                 "created_offset_h": 2,
                 "before_file": "before_2.png"
             },
             {
-                "title": "Broken bricks and concrete debris blocking Madhapur 100ft Road",
-                "category": "construction debris",
+                "title": "Unswept litter and dry leaves outside shops on Madhapur 100ft Road",
+                "category": "unswept street",
                 "ward": "Madhapur",
                 "lat": 17.4485, "lon": 78.3917,
                 "created_offset_h": 2,
@@ -351,13 +351,16 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
         # Sample photos for history records, matched by category. Copies are named history_*
         # so the UI can tag them as samples. History resolutions keep a NULL perceptual hash,
         # so these copies never trigger the duplicate check on live uploads.
-        history_pairs = {"garbage dump": [1, 5, 6], "blocked drain": [2], "construction debris": [3], "unswept street": [4]}
+        # (no demo photo shows a drain, so drain history records keep the category illustration)
+        history_pairs = {"garbage dump": [1, 5, 6], "blocked drain": [], "construction debris": [2], "unswept street": [3, 4]}
         for n in (range(1, 7) if total_bg else []):
             for kind, folder in (("before", demo_before_dir), ("after", demo_after_dir)):
                 src = next(folder.glob(f"{kind}_{n}.*"))
                 convert_to_jpeg(src, IMAGES_DIR / f"history_{kind}_{n}.jpg")
 
         def history_photo(kind, n):
+            if n is None:
+                return "synthetic_bg"
             return str((IMAGES_DIR / f"history_{kind}_{n}.jpg").resolve()).replace("\\", "/")
 
         for bg_i in range(1, total_bg + 1):
@@ -365,7 +368,7 @@ so whichever of the two is uploaded second is also flagged as a duplicate (-30).
             is_hotspot = ward in hotspot_wards
 
             category = random.choice(VALID_CATEGORIES)
-            pair_n = history_pairs[category][bg_i % len(history_pairs[category])]
+            pair_n = history_pairs[category][bg_i % len(history_pairs[category])] if history_pairs[category] else None
             title = random.choice(sample_titles[category])
             
             # Lat/Lng within ~1.5km of ward center

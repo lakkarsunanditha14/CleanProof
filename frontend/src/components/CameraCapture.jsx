@@ -1,15 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, X, MapPin, AlertCircle } from 'lucide-react';
 import Button from './Button';
+import { WARDS } from '../constants';
 
-// Live in-app camera. There is no gallery option, so an old photo cannot be chosen.
-// The device location is read at the moment the camera is opened and sent with the photo.
-export default function CameraCapture({ onCapture, onCancel }) {
+// Where the photo is, from measured facts only: distance to the nearest known ward centre.
+// (No place-name lookup: map boundaries can name the wrong village or mandal.)
+function nearestWard(lat, lng) {
+  const km = (w) => Math.hypot((w.lat - lat) * 111, (w.lng - lng) * 111 * Math.cos((lat * Math.PI) / 180));
+  const nearest = [...WARDS].sort((x, y) => km(x) - km(y))[0];
+  return km(nearest) < 20 ? `near ${nearest.name} (${km(nearest).toFixed(1)} km)` : `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New report' }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState({ state: 'pending' });
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,9 +90,18 @@ export default function CameraCapture({ onCapture, onCancel }) {
     <div className="space-y-3">
       <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-900">
         <video ref={videoRef} autoPlay playsInline muted onLoadedData={() => setReady(true)} className="w-full h-full object-cover" />
-        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE CAMERA
-        </span>
+        <div className="absolute inset-x-0 top-0 bg-black/55 px-3 py-2 text-white text-[11px] sm:text-xs leading-snug font-semibold">
+          <p className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            CleanProof | LIVE CAPTURE | {stampLabel}
+          </p>
+          <p>{now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} IST</p>
+          <p>
+            {location.state === 'ok' && `${nearestWard(location.lat, location.lng)}, GPS accuracy ±${Math.round(location.accuracy)} m`}
+            {location.state === 'pending' && 'GPS: locating...'}
+            {location.state === 'failed' && 'GPS: not available'}
+          </p>
+        </div>
       </div>
       <p className="text-xs text-slate-600 flex items-center gap-1.5">
         <MapPin className="w-3.5 h-3.5" />

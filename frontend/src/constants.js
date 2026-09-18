@@ -15,7 +15,7 @@ export const WARDS = [
   { name: 'Mehdipatnam', lat: 17.395, lng: 78.44 },
   { name: 'Begumpet', lat: 17.4447, lng: 78.4664 },
   { name: 'LB Nagar', lat: 17.3457, lng: 78.5522 },
-  { name: 'Narsapur', lat: 17.7375, lng: 78.2842, district: 'Medak' }, // approximate town centre
+  { name: 'Narsapur', lat: 17.7384, lng: 78.2796, district: 'Medak' }, // Narsapur mandal centre (OpenStreetMap)
 ];
 
 export function wardLabel(w) {

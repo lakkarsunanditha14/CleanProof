@@ -18,8 +18,8 @@ def run_clip_pair_evaluation():
     # Category mapping per pair index 1..6
     pair_category_map = {
         1: "garbage dump",
-        2: "blocked drain",
-        3: "construction debris",
+        2: "construction debris",
+        3: "unswept street",
         4: "unswept street",
         5: "garbage dump",
         6: "garbage dump",

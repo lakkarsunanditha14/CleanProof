@@ -21,6 +21,7 @@ from app.services.sla_service import calculate_sla_info, get_category_sla_hours
 from app.services.exif_service import calculate_image_hash, extract_exif_metadata
 from app.services.verification import run_resolution_verification_pipeline
 from app.services.image_quality import quality_problem
+from app.services.photo_stamp import stamp_photo
 
 router = APIRouter(prefix="/api/complaints", tags=["Complaints"])
 
@@ -315,6 +316,20 @@ async def resolve_complaint(
         delay_note=delay_note,
         created_at=closed_at
     )
+
+    # Live captures: show a visible evidence stamp (server time, GPS) on the saved photo.
+    # Verification above already ran on the clean photo.
+    if capture_mode == "live":
+        lat, lon = verification_result["photo_latitude"], verification_result["photo_longitude"]
+        dist = verification_result["gps_distance_meters"]
+        stamped = file_path.with_name(file_path.stem + "_stamped.jpg")
+        stamp_photo(file_path, stamped, [
+            f"CleanProof  |  LIVE CAPTURE  |  Complaint #{complaint.id}  |  {complaint.ward}",
+            (closed_at + timedelta(hours=5, minutes=30)).strftime("%d %b %Y, %H:%M:%S IST") + "  (server time)",
+            f"{complaint.ward} ward  |  {round(dist)} m from the registered complaint spot" if lat is not None
+            else f"{complaint.ward} ward  |  location not shared",
+        ])
+        resolution.after_image_path = str(stamped.resolve()).replace("\\", "/")
 
     # Update complaint status to RESOLVED
     complaint.status = "RESOLVED"

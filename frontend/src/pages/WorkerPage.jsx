@@ -109,7 +109,7 @@ function ResolvePanel({ complaint, onClose, onResolved }) {
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">After (your photo)</p>
               {cameraOpen ? (
-                <CameraCapture onCapture={handleCapture} onCancel={() => setCameraOpen(false)} />
+                <CameraCapture onCapture={handleCapture} onCancel={() => setCameraOpen(false)} stampLabel={`Complaint #${complaint.id} | ${complaint.ward}`} />
               ) : preview ? (
                 <div className="space-y-2">
                   <div className="relative">

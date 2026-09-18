@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.services import clip_service  # noqa: E402
 from app.services.image_quality import quality_problem  # noqa: E402
 
-CATEGORIES = {1: "garbage dump", 2: "blocked drain", 3: "construction debris",
+CATEGORIES = {1: "garbage dump", 2: "construction debris", 3: "unswept street",
               4: "unswept street", 5: "garbage dump", 6: "garbage dump"}
 
 
