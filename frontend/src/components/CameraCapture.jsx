@@ -21,9 +21,12 @@ export default function CameraCapture({ onCapture, onCancel }) {
         videoRef.current.srcObject = stream;
       })
       .catch((err) => {
-        setError(err.name === 'NotAllowedError'
-          ? 'Camera permission was blocked. Allow the camera for this site in the browser, then try again.'
-          : 'No camera found on this device.');
+        const messages = {
+          NotAllowedError: 'Camera permission was blocked. Allow the camera for this site in the browser, then try again.',
+          NotReadableError: 'The camera is being used by another tab or app (for example Zoom, Teams or another CleanProof tab). Close it and try again.',
+          NotFoundError: 'No camera found on this device.',
+        };
+        setError(messages[err.name] || `The camera could not be opened (${err.name}). Close other tabs using it and try again.`);
       });
     if (!navigator.mediaDevices) setError('This browser cannot open the camera.');
 
