@@ -25,9 +25,18 @@ STEP 5  Real clean photo from a different place
   Upload fake_wrong_place_for_1.jpg to complaint #5 (Dilsukhnagar)
   Expected: 70/100 SUSPICIOUS (photo taken km away from the complaint -30)
 
-STEP 6  Dashboard
+STEP 6  Closed after the deadline (reason required)
+  Complaint #4 (Secunderabad) is already 2h past its 24h deadline.
+  Click Resolve, upload genuine_after_4.jpg, pick a delay reason (e.g. Vehicle or staff shortage)
+  Expected: 100/100 VERIFIED, "Closed 2h after the deadline. Reason: ..."
+  (Without a reason the closure is refused.)
+
+STEP 7  Dashboard
   Show the hotspots: Dilsukhnagar (fake closures) and Kukatpally (missed deadlines)
+  and the "Why deadlines were missed" chart
 
 Other files: genuine_after_2..6.jpg are genuine clean-ups for complaints #2..#6.
+Only upload to complaints #1..#6. The other complaints are synthetic history with
+no photos and no real location, so any upload to them is flagged.
 Note: fake_wrong_place_for_1.jpg is the same photo as genuine_after_3.jpg,
 so whichever of the two is uploaded second is also flagged as a duplicate (-30).
