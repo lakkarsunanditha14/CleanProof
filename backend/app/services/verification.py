@@ -8,7 +8,7 @@ from app.services.exif_service import (
     haversine_distance,
     extract_exif_metadata
 )
-from app.services.clip_service import analyze_resolution_with_clip
+from app.services.clip_service import compare_photos_with_clip
 
 def run_resolution_verification_pipeline(
     db: Session,
@@ -19,9 +19,9 @@ def run_resolution_verification_pipeline(
     after_timestamp_input: Optional[datetime] = None
 ) -> Dict[str, Any]:
     """
-    Executes the 5-check resolution verification engine using local CLIP model:
+    Executes the 5-check resolution verification engine using local CLIP model photo comparison:
     - Base score: 100
-    - AI Vision (CLIP) issue still visible: -50 pts
+    - AI Vision (CLIP) problem not reduced: -50 pts
     - GPS distance between before and after > 50m: -25 pts (Missing EXIF GPS: -25 pts)
     - After-photo timestamp earlier than complaint time: -20 pts (Missing EXIF Timestamp: -20 pts)
     - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
@@ -47,20 +47,26 @@ def run_resolution_verification_pipeline(
     db_after_lon = after_longitude_input or exif_lon
     db_after_ts = after_timestamp_input or exif_ts or datetime.utcnow()
 
-    # CHECK 1: Local CLIP Vision Analysis
-    clip_res = analyze_resolution_with_clip(after_image_path)
+    # CHECK 1: Local CLIP Vision Comparison (Before vs After)
+    clip_res = compare_photos_with_clip(
+        before_image_path=complaint.before_image_path,
+        after_image_path=after_image_path,
+        category=complaint.category
+    )
 
     clip_status = clip_res.get("status", "UNAVAILABLE")
     clip_issue_present = clip_res.get("issue_present")
-    clip_confidence = clip_res.get("confidence")
+    before_pct = clip_res.get("before_percent")
+    after_pct = clip_res.get("after_percent")
     clip_explanation = clip_res.get("explanation")
+    clip_confidence = after_pct if after_pct is not None else 0.0
 
     if clip_status == "COMPLETED":
         if clip_issue_present is True:
             score -= 50
-            reasons.append(f"AI Vision (CLIP): issue still visible (confidence {clip_confidence}%)")
+            reasons.append(f"AI Vision (CLIP): problem not reduced (before {before_pct}%, after {after_pct}%) (-50 pts)")
         else:
-            reasons.append(f"AI Vision (CLIP): area looks clean (confidence {clip_confidence}%)")
+            reasons.append(f"AI Vision (CLIP): problem reduced from {before_pct}% to {after_pct}% (Pass)")
     else:
         # Check unavailable: skip deduction
         reasons.append("AI Vision (CLIP): Check unavailable (skipped)")

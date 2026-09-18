@@ -8,6 +8,7 @@ env_path = backend_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 
 CLIP_THRESHOLD = float(os.getenv("CLIP_THRESHOLD", "0.5"))
+CLIP_RATIO = float(os.getenv("CLIP_RATIO", "0.75"))
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./resolved_allegedly.db")
 
 # Image directory path (absolute path to data/images)
