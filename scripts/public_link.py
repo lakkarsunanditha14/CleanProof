@@ -100,7 +100,10 @@ def run_tunnel(first: bool) -> None:
             share = update_permanent_link(url)
         except Exception as err:  # not logged in to Hugging Face, or offline
             print(f"(Permanent link not updated: {err}. Sharing the tunnel link instead.)")
-        save_qr(share)
+        try:
+            save_qr(share)
+        except OSError as err:  # QR picture open in another app
+            print(f"(QR code not saved: {err})")
         print("\n" + "=" * 70)
         print(f"  SHARE THIS LINK:  {share}")
         print(f"  (tunnel: {url})")
@@ -133,7 +136,10 @@ def main() -> None:
     try:
         first = True
         while True:
-            run_tunnel(first)
+            try:
+                run_tunnel(first)
+            except Exception as err:  # never let one bad start take the public link down
+                print(f"Public link error: {err}")
             first = False
             time.sleep(5)
     except KeyboardInterrupt:
