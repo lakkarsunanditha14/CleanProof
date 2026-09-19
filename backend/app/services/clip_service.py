@@ -270,12 +270,14 @@ def photo_relevance(image: Image.Image) -> Tuple[bool, Optional[str]]:
         "an overflowing garbage bin",
         "a drain blocked with rubbish",
         "construction debris or rubble",
-        "a dirty unswept street"
+        "a dirty unswept street",
+        "empty snack packets and wrappers thrown on a table or floor",
+        "plastic wrappers and litter left on a surface"
     ]
     not_relevant_mapping = {
         "a close-up photo of a person's face": "a person's face",
         "a screenshot, document or computer screen": "a screen or document",
-        "a plate of food": "food",
+        "a meal served on a plate": "food",
         "a dog, cat or other animal": "an animal",
         "a car, bike or other vehicle": "a vehicle",
         "a clean empty room": "a clean room"
