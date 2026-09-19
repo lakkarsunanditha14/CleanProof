@@ -47,7 +47,7 @@ const LEGEND = [
 
 function Kpi({ icon: Icon, label, value, note, color }) {
   return (
-    <Card padding="p-5">
+    <Card hover padding="p-5">
       <div className="flex items-center justify-between text-slate-500 mb-2">
         <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
         <Icon className="w-5 h-5" style={{ color }} />
@@ -60,7 +60,7 @@ function Kpi({ icon: Icon, label, value, note, color }) {
 
 function ChartCard({ title, subtitle, children, height = 300, empty }) {
   return (
-    <Card className="space-y-4">
+    <Card hover className="space-y-4">
       <div>
         <h3 className="font-bold text-slate-900">{title}</h3>
         {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
