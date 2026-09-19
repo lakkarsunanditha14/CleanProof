@@ -108,7 +108,15 @@ async def create_complaint(
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(photo.file, buffer)
-    _reject_unusable_photo(file_path)
+    
+    # Just check if it's readable, do not reject blurry/dark photos for creation
+    from PIL import Image
+    try:
+        with Image.open(file_path) as img:
+            img.verify()
+    except Exception:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="The file is not a readable photo. Please upload a JPG or PNG image.")
 
     from app.services.clip_service import photo_relevance
     from PIL import Image

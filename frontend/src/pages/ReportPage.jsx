@@ -9,6 +9,7 @@ import SlaBadge from '../components/SlaBadge';
 import CameraCapture from '../components/CameraCapture';
 import { CATEGORIES, WARDS, categoryLabel, wardLabel } from '../constants';
 import { fetchApi, formatDateTime } from '../api';
+import exifr from 'exifr';
 
 const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0F6E5C] focus:outline-none focus:ring-2 focus:ring-[#0F6E5C]/20';
@@ -38,12 +39,30 @@ export default function ReportPage() {
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [hasPhotoGps, setHasPhotoGps] = useState(null);
 
-  function handlePhoto(e) {
+  async function handlePhoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhoto(file);
     setPreview(URL.createObjectURL(file));
+
+    try {
+      const exifData = await exifr.parse(file, { gps: true, datetime: true });
+      if (exifData && exifData.latitude != null && exifData.longitude != null) {
+        setLatitude(exifData.latitude.toFixed(6));
+        setLongitude(exifData.longitude.toFixed(6));
+        setHasPhotoGps(true);
+        const timeStr = exifData.DateTimeOriginal ? exifData.DateTimeOriginal.toLocaleString() : 'unknown time';
+        setLocationNote(`Location taken from the photo (taken ${timeStr}).`);
+      } else {
+        setHasPhotoGps(false);
+        setLocationNote('This photo has no location. Choose the ward or enter the location where the photo was taken.');
+      }
+    } catch (err) {
+      setHasPhotoGps(false);
+      setLocationNote('This photo has no location. Choose the ward or enter the location where the photo was taken.');
+    }
   }
 
   function handleCapture({ file, url, lat, lng }) {
@@ -54,6 +73,9 @@ export default function ReportPage() {
       setLatitude(lat.toFixed(6));
       setLongitude(lng.toFixed(6));
       setLocationNote('Location taken from the live photo.');
+      setHasPhotoGps(true);
+    } else {
+      setHasPhotoGps(null);
     }
   }
 
@@ -122,6 +144,7 @@ export default function ReportPage() {
     setLatitude('');
     setLongitude('');
     setLocationNote('');
+    setHasPhotoGps(null);
   }
 
   if (created) {
@@ -238,9 +261,11 @@ export default function ReportPage() {
             <MapPin className="w-5 h-5 text-[#0F6E5C]" /> Location
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="primary" icon={Crosshair} onClick={useMyLocation} disabled={locating}>
-              {locating ? 'Getting location...' : 'Use my location'}
-            </Button>
+            {hasPhotoGps !== false && (
+              <Button variant="primary" icon={Crosshair} onClick={useMyLocation} disabled={locating}>
+                {locating ? 'Getting location...' : 'Use my location'}
+              </Button>
+            )}
             <Button variant="outline" icon={MapPin} onClick={useWardCentre}>Use ward centre</Button>
           </div>
           {locationNote && <p className="text-xs text-slate-600">{locationNote}</p>}
