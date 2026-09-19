@@ -276,10 +276,10 @@ def photo_relevance(image: Image.Image) -> Tuple[bool, Optional[str]]:
     ]
     not_relevant_mapping = {
         "a close-up photo of a person's face": "a person's face",
-        "a photo of people posing or sitting together": "people, not a civic problem",
-        "a selfie of one or more people": "people, not a civic problem",
-        "a group of people in a room": "people, not a civic problem",
-        "a person looking at the camera": "people, not a civic problem",
+        "a photo of people posing or sitting together": "people",
+        "a selfie of one or more people": "people",
+        "a group of people in a room": "people",
+        "a person looking at the camera": "people",
         "a screenshot, document or computer screen": "a screen or document",
         "a meal served on a plate": "food",
         "a dog, cat or other animal": "an animal",
