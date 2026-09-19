@@ -260,3 +260,40 @@ def analyze_resolution_with_clip(
             "explanation": "AI Vision (CLIP): Check unavailable (skipped)",
             "error": str(e)
         }
+
+def photo_relevance(image: Image.Image) -> Tuple[bool, Optional[str]]:
+    """Checks if the photo is relevant to a civic problem using CLIP."""
+    model, processor = _get_clip_model()
+    
+    relevant_labels = [
+        "garbage, litter or waste on the ground",
+        "an overflowing garbage bin",
+        "a drain blocked with rubbish",
+        "construction debris or rubble",
+        "a dirty unswept street"
+    ]
+    not_relevant_mapping = {
+        "a close-up photo of a person's face": "a person's face",
+        "a screenshot, document or computer screen": "a screen or document",
+        "a plate of food": "food",
+        "a dog, cat or other animal": "an animal",
+        "a car, bike or other vehicle": "a vehicle",
+        "a clean empty room": "a clean room"
+    }
+    not_relevant_labels = list(not_relevant_mapping.keys())
+    all_labels = relevant_labels + not_relevant_labels
+    
+    inputs = processor(text=all_labels, images=[image.convert("RGB")], return_tensors="pt", padding=True)
+    with torch.no_grad():
+        probs = model(**inputs).logits_per_image.softmax(dim=-1)[0]
+    
+    relevant_prob = float(probs[:len(relevant_labels)].sum())
+    
+    if relevant_prob > 0.5:
+        return True, None
+        
+    not_rel_idx = int(probs[len(relevant_labels):].argmax())
+    best_not_rel_label = not_relevant_labels[not_rel_idx]
+    best_not_rel_short = not_relevant_mapping[best_not_rel_label]
+    
+    return False, best_not_rel_short

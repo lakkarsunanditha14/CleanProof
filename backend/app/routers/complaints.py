@@ -110,6 +110,21 @@ async def create_complaint(
         shutil.copyfileobj(photo.file, buffer)
     _reject_unusable_photo(file_path)
 
+    from app.services.clip_service import photo_relevance
+    from PIL import Image
+    try:
+        with Image.open(file_path) as img:
+            is_relevant, best_not_rel = photo_relevance(img)
+    except Exception:
+        is_relevant = True
+    
+    if not is_relevant:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=400,
+            detail=f"This photo looks like {best_not_rel}, not a civic problem. Please take a photo of the garbage or issue you are reporting."
+        )
+
     saved_path_str = str(file_path.resolve()).replace("\\", "/")
 
     # Extract EXIF & perceptual hash for before-photo
@@ -372,6 +387,21 @@ async def reopen_complaint(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(photo.file, buffer)
     _reject_unusable_photo(file_path)
+
+    from app.services.clip_service import photo_relevance
+    from PIL import Image
+    try:
+        with Image.open(file_path) as img:
+            is_relevant, best_not_rel = photo_relevance(img)
+    except Exception:
+        is_relevant = True
+    
+    if not is_relevant:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=400,
+            detail=f"This photo looks like {best_not_rel}, not a civic problem. Please take a photo of the garbage or issue you are reporting."
+        )
 
     reopen_path_str = str(file_path.resolve()).replace("\\", "/")
 
