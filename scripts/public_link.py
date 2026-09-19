@@ -2,12 +2,17 @@
 
 The tunnel link changes on every start, so the permanent link (a free static Hugging Face Space,
 see permanent_link.py) is updated to forward to it. People always use the permanent link.
-Works on any network (Wi-Fi or mobile data) while this window stays open.
+Works on any network (Wi-Fi or mobile data) while this window stays open. If the tunnel dies
+(sleep, Wi-Fi change) a new one is started and the permanent link is updated automatically.
 """
+import ctypes
 import os
 import re
 import subprocess
 import sys
+import threading
+import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,10 +41,16 @@ def save_qr(url: str) -> None:
     card.save(QR_FILE)
 
 
-def main() -> None:
-    if not CLOUDFLARED.exists():
-        sys.exit(f"cloudflared not found at {CLOUDFLARED}")
+def tunnel_alive(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(url + "/api/dashboard/stats", timeout=20) as r:
+            return r.status == 200
+    except Exception:
+        return False
 
+
+def run_tunnel(first: bool) -> None:
+    """Start one tunnel, publish its link, and return once it has died."""
     proc = subprocess.Popen(
         [str(CLOUDFLARED), "tunnel", "--no-autoupdate", "--url", "https://localhost:5173", "--no-tls-verify"],
         stdout=subprocess.PIPE,
@@ -47,33 +58,57 @@ def main() -> None:
         text=True,
     )
     print("Starting the public link (takes a few seconds)...")
-    url = None
     try:
+        url = None
         for line in proc.stdout:
-            if url is None:
-                match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
-                if match:
-                    url = match.group(0)
-                    share = url
-                    try:
-                        from permanent_link import update_permanent_link
-                        share = update_permanent_link(url)
-                    except Exception as err:  # not logged in to Hugging Face, or offline
-                        print(f"(Permanent link not updated: {err}. Sharing the tunnel link instead.)")
-                    save_qr(share)
-                    print("\n" + "=" * 70)
-                    print(f"  SHARE THIS LINK:  {share}")
-                    print(f"  (tunnel: {url})")
-                    print(f"  QR code:          {QR_FILE}")
-                    print("  Works on any phone, any network. Keep this window open.")
-                    print("=" * 70 + "\n")
-                    os.startfile(QR_FILE)
-            elif "ERR" in line:
-                print(line.rstrip())
-    except KeyboardInterrupt:
-        pass
+            match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+            if match:
+                url = match.group(0)
+                break
+        if url is None:
+            return
+        # Keep reading cloudflared's output so it never blocks on a full pipe
+        threading.Thread(target=lambda: [None for _ in proc.stdout], daemon=True).start()
+        share = url
+        try:
+            from permanent_link import update_permanent_link
+            share = update_permanent_link(url)
+        except Exception as err:  # not logged in to Hugging Face, or offline
+            print(f"(Permanent link not updated: {err}. Sharing the tunnel link instead.)")
+        save_qr(share)
+        print("\n" + "=" * 70)
+        print(f"  SHARE THIS LINK:  {share}")
+        print(f"  (tunnel: {url})")
+        print(f"  QR code:          {QR_FILE}")
+        print("  Works on any phone, any network. Keep this window open.")
+        print("=" * 70 + "\n")
+        if first:
+            os.startfile(QR_FILE)
+
+        # Quick tunnels die after sleep or a network change; restart after 3 failed checks in a row
+        time.sleep(30)
+        failures = 0
+        while proc.poll() is None and failures < 3:
+            failures = 0 if tunnel_alive(url) else failures + 1
+            time.sleep(60 if failures == 0 else 20)
+        print(time.strftime("%H:%M") + "  Public link stopped working, starting a new one...")
     finally:
         proc.terminate()
+
+
+def main() -> None:
+    if not CLOUDFLARED.exists():
+        sys.exit(f"cloudflared not found at {CLOUDFLARED}")
+    # Stop Windows from sleeping while the demo is shared (closing the lid can still sleep it)
+    ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
+    try:
+        first = True
+        while True:
+            run_tunnel(first)
+            first = False
+            time.sleep(5)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

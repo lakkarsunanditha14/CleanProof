@@ -7,10 +7,12 @@ page is published, no app code. It works while this laptop is running the app.
 Requires a one-time login: backend\\venv\\Scripts\\hf.exe auth login
 """
 import re
+from pathlib import Path
 
 from huggingface_hub import HfApi
 
 SPACE_NAME = "cleanproof"
+SNAPSHOT = Path(__file__).resolve().parents[1] / "docs" / "screenshots" / "dashboard.png"  # shown when offline
 
 README = """---
 title: CleanProof
@@ -31,7 +33,6 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CleanProof</title>
-<meta http-equiv="refresh" content="0; url={url}">
 <style>
   body {{ font-family: system-ui, sans-serif; background: #f8fafc; color: #1b2430; margin: 0;
          min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; }}
@@ -40,16 +41,30 @@ PAGE = """<!doctype html>
   a.button {{ display: inline-block; margin-top: 16px; background: #0f6e5c; color: #fff; padding: 12px 20px;
              border-radius: 12px; text-decoration: none; font-weight: 600; }}
   p.note {{ color: #64748b; font-size: 14px; }}
+  #offline {{ display: none; max-width: 1100px; margin: 16px; }}
+  #offline img {{ width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; }}
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="loading">
   <h1>CleanProof</h1>
-  <p>Opening the live demo...</p>
-  <a class="button" href="{url}" target="_top">Open CleanProof</a>
-  <p class="note">If it does not open, the demo laptop is offline right now.</p>
+  <p>Opening the live dashboard...</p>
 </div>
-<script>try {{ window.top.location.replace("{url}"); }} catch (e) {{ location.replace("{url}"); }}</script>
+<div id="offline">
+  <h1>CleanProof dashboard</h1>
+  <p class="note">The live demo is offline right now, so this is a saved snapshot of the dashboard.
+     <a href="">Try again</a></p>
+  <img src="dashboard.png" alt="CleanProof accountability dashboard">
+</div>
+<script>
+  // Open the live dashboard only if the demo laptop answers; otherwise show the snapshot
+  const live = "{url}";
+  const go = () => {{ try {{ window.top.location.replace(live + "/dashboard"); }} catch (e) {{ location.replace(live + "/dashboard"); }} }};
+  const offline = () => {{ document.getElementById("loading").style.display = "none";
+                           document.getElementById("offline").style.display = "block"; }};
+  fetch(live + "/api/dashboard/stats", {{ cache: "no-store", signal: AbortSignal.timeout(10000) }})
+    .then(r => r.ok ? go() : offline()).catch(offline);
+</script>
 </body>
 </html>
 """
@@ -63,6 +78,8 @@ def update_permanent_link(url: str) -> str:
     api.create_repo(repo_id, repo_type="space", space_sdk="static", exist_ok=True)
     api.upload_file(path_or_fileobj=README.encode(), path_in_repo="README.md",
                     repo_id=repo_id, repo_type="space", commit_message="CleanProof permanent link")
+    api.upload_file(path_or_fileobj=str(SNAPSHOT), path_in_repo="dashboard.png",
+                    repo_id=repo_id, repo_type="space", commit_message="Dashboard snapshot")
     api.upload_file(path_or_fileobj=PAGE.format(url=url).encode(), path_in_repo="index.html",
                     repo_id=repo_id, repo_type="space", commit_message=f"Forward to {url}")
     return "https://" + re.sub(r"[^a-z0-9]+", "-", f"{user}-{SPACE_NAME}".lower()).strip("-") + ".static.hf.space"
