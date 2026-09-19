@@ -76,6 +76,8 @@ function ChartCard({ title, subtitle, children, height = 300, empty }) {
   );
 }
 
+// Headless Edge (offline snapshot, scripts/public_link.py) never finishes chart animations
+const ANIMATE = !/Headless/.test(navigator.userAgent);
 const axisProps = { tick: { fill: INK, fontSize: 12 }, axisLine: false, tickLine: false };
 const tooltipProps = {
   cursor: { fill: 'rgba(15,110,92,0.06)' },
@@ -250,7 +252,7 @@ export default function DashboardPage() {
                   <YAxis type="category" dataKey="ward" width={96} {...axisProps} />
                   <Tooltip {...tooltipProps} formatter={(v) => [`${v}%`, 'On time']} />
                   <ReferenceLine x={TARGET} stroke={INK} strokeDasharray="4 4" />
-                  <Bar dataKey="adherence_percent" fill={GREEN} radius={[0, 4, 4, 0]} barSize={18}>
+                  <Bar isAnimationActive={ANIMATE} dataKey="adherence_percent" fill={GREEN} radius={[0, 4, 4, 0]} barSize={18}>
                     <LabelList dataKey="adherence_percent" position="right" formatter={(v) => `${v}%`} style={{ fill: INK, fontSize: 12, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
@@ -265,7 +267,7 @@ export default function DashboardPage() {
                   <XAxis type="number" allowDecimals={false} {...axisProps} />
                   <YAxis type="category" dataKey="ward" width={96} {...axisProps} />
                   <Tooltip {...tooltipProps} formatter={(v) => [v, 'Suspected fake closures']} />
-                  <Bar dataKey="false_closures" fill={RED} radius={[0, 4, 4, 0]} barSize={18}>
+                  <Bar isAnimationActive={ANIMATE} dataKey="false_closures" fill={RED} radius={[0, 4, 4, 0]} barSize={18}>
                     <LabelList dataKey="false_closures" position="right" style={{ fill: INK, fontSize: 12, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
@@ -282,8 +284,8 @@ export default function DashboardPage() {
                 <YAxis allowDecimals={false} {...axisProps} />
                 <Tooltip {...tooltipProps} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 13, color: INK }} />
-                <Bar dataKey="on_time" name="On time" stackId="a" fill={GREEN} stroke="#fff" strokeWidth={2} barSize={44} />
-                <Bar dataKey="breached" name="Missed deadline" stackId="a" fill={AMBER} stroke="#fff" strokeWidth={2} radius={[4, 4, 0, 0]} barSize={44} />
+                <Bar isAnimationActive={ANIMATE} dataKey="on_time" name="On time" stackId="a" fill={GREEN} stroke="#fff" strokeWidth={2} barSize={44} />
+                <Bar isAnimationActive={ANIMATE} dataKey="breached" name="Missed deadline" stackId="a" fill={AMBER} stroke="#fff" strokeWidth={2} radius={[4, 4, 0, 0]} barSize={44} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -296,7 +298,7 @@ export default function DashboardPage() {
                 <XAxis type="number" allowDecimals={false} {...axisProps} />
                 <YAxis type="category" dataKey="label" width={170} {...axisProps} />
                 <Tooltip {...tooltipProps} formatter={(v) => [v, 'Late closures']} labelFormatter={(_, p) => p?.[0]?.payload.reason} />
-                <Bar dataKey="count" fill={AMBER} radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar isAnimationActive={ANIMATE} dataKey="count" fill={AMBER} radius={[0, 4, 4, 0]} barSize={16}>
                   <LabelList dataKey="count" position="right" style={{ fill: INK, fontSize: 12, fontWeight: 600 }} />
                 </Bar>
               </BarChart>

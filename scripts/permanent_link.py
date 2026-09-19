@@ -78,11 +78,20 @@ def update_permanent_link(url: str) -> str:
     api.create_repo(repo_id, repo_type="space", space_sdk="static", exist_ok=True)
     api.upload_file(path_or_fileobj=README.encode(), path_in_repo="README.md",
                     repo_id=repo_id, repo_type="space", commit_message="CleanProof permanent link")
-    api.upload_file(path_or_fileobj=str(SNAPSHOT), path_in_repo="dashboard.png",
-                    repo_id=repo_id, repo_type="space", commit_message="Dashboard snapshot")
+    if not api.file_exists(repo_id, "dashboard.png", repo_type="space"):  # keep newer live snapshots
+        api.upload_file(path_or_fileobj=str(SNAPSHOT), path_in_repo="dashboard.png",
+                        repo_id=repo_id, repo_type="space", commit_message="Dashboard snapshot")
     api.upload_file(path_or_fileobj=PAGE.format(url=url).encode(), path_in_repo="index.html",
                     repo_id=repo_id, repo_type="space", commit_message=f"Forward to {url}")
     return "https://" + re.sub(r"[^a-z0-9]+", "-", f"{user}-{SPACE_NAME}".lower()).strip("-") + ".static.hf.space"
+
+
+def upload_snapshot(png) -> None:
+    """Replace the offline dashboard snapshot with a newer picture."""
+    api = HfApi()
+    api.upload_file(path_or_fileobj=str(png), path_in_repo="dashboard.png",
+                    repo_id=f"{api.whoami()['name']}/{SPACE_NAME}", repo_type="space",
+                    commit_message="Fresh dashboard snapshot")
 
 
 if __name__ == "__main__":
