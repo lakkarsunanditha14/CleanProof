@@ -191,6 +191,6 @@ YOLO item counting (*"14 items → 0"*) · dedicated AI-image detector · device
 
 **Built for TechSurge Hackathon · Kalachakra 2K26 · PS-D04 "Resolved, Allegedly"**
 
-Made with 💚 by **[Nanditha](https://github.com/lakkarsunanditha14)** · BVRIT Narsapur
+Made with 💚 at BVRIT Narsapur
 
 </div>
