@@ -10,7 +10,7 @@ export default function Button({
   className = '',
   icon: Icon = null,
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer motion-safe:enabled:hover:-translate-y-0.5 enabled:hover:shadow-md';
 
   const variants = {
     primary: 'bg-[#0F6E5C] text-white hover:bg-[#0D5C4D] active:bg-[#0A4A3E] focus:ring-[#0F6E5C] shadow-sm',

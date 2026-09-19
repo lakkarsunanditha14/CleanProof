@@ -3,7 +3,7 @@ import React from 'react';
 export default function Card({
   children,
   className = '',
-  hover = false,
+  hover = true, // gentle lift on mouse-over everywhere
   padding = 'p-6',
 }) {
   return (

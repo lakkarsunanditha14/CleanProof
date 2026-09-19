@@ -266,7 +266,7 @@ export default function HomePage() {
           {fiveChecks.map((check, idx) => {
             const Icon = check.icon;
             return (
-              <div key={idx} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-50 transition-colors space-y-3">
+              <div key={idx} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:shadow-lg hover:border-slate-200 motion-safe:hover:-translate-y-1 transition-all duration-200 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl ${check.color} flex items-center justify-center shrink-0`}>
                     <Icon className="w-5 h-5" />
