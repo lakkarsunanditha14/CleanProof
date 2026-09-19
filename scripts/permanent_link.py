@@ -52,18 +52,21 @@ PAGE = """<!doctype html>
 </div>
 <div id="offline">
   <h1>CleanProof dashboard</h1>
-  <p class="note">The live demo is offline right now, so this is a saved snapshot of the dashboard.
-     <a href="">Try again</a></p>
+  <p class="note">Latest saved snapshot of the dashboard. The live version opens by itself as soon
+     as the demo laptop is back online.</p>
   <img src="dashboard.png" alt="CleanProof accountability dashboard">
 </div>
 <script>
-  // Open the live dashboard only if the demo laptop answers; otherwise show the snapshot
-  const live = "{url}";
-  const go = () => {{ try {{ window.top.location.replace(live + "/dashboard"); }} catch (e) {{ location.replace(live + "/dashboard"); }} }};
+  // Open the live dashboard if the demo laptop answers; otherwise show the snapshot and keep checking.
+  // Each check re-reads this page, because a restarted tunnel publishes a new link here.
+  const go = (live) => {{ try {{ window.top.location.replace(live + "/dashboard"); }} catch (e) {{ location.replace(live + "/dashboard"); }} }};
   const offline = () => {{ document.getElementById("loading").style.display = "none";
                            document.getElementById("offline").style.display = "block"; }};
-  fetch(live + "/api/dashboard/stats", {{ cache: "no-store", signal: AbortSignal.timeout(10000) }})
-    .then(r => r.ok ? go() : offline()).catch(offline);
+  const check = (live) => fetch(live + "/api/dashboard/stats", {{ cache: "no-store", signal: AbortSignal.timeout(4000) }})
+    .then(r => {{ if (!r.ok) throw 0; go(live); }});
+  const latest = () => fetch("index.html", {{ cache: "no-store" }}).then(r => r.text())
+    .then(t => check(t.match(/https:[/][/][a-z0-9-]+[.]trycloudflare[.]com/)[0]));
+  check("{url}").catch(() => {{ offline(); setInterval(() => latest().catch(() => {{}}), 10000); }});
 </script>
 </body>
 </html>

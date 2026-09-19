@@ -46,7 +46,7 @@ def save_qr(url: str) -> None:
 
 def tunnel_alive(url: str) -> bool:
     try:
-        with urllib.request.urlopen(url + "/api/dashboard/stats", timeout=20) as r:
+        with urllib.request.urlopen(url + "/api/dashboard/stats", timeout=8) as r:
             return r.status == 200
     except Exception:
         return False
@@ -113,16 +113,16 @@ def run_tunnel(first: bool) -> None:
         if first:
             os.startfile(QR_FILE)
 
-        # Quick tunnels die after sleep or a network change; restart after 3 failed checks in a row
+        # Quick tunnels die after sleep or a network change; restart after 2 failed checks in a row (about 30 s)
         time.sleep(30)
         failures = 0
         last_snapshot = 0.0
-        while proc.poll() is None and failures < 3:
+        while proc.poll() is None and failures < 2:
             failures = 0 if tunnel_alive(url) else failures + 1
             if failures == 0 and time.time() - last_snapshot > SNAPSHOT_EVERY:
                 last_snapshot = time.time()
                 refresh_snapshot()
-            time.sleep(60 if failures == 0 else 20)
+            time.sleep(10 if failures == 0 else 3)
         print(time.strftime("%H:%M") + "  Public link stopped working, starting a new one...")
     finally:
         proc.terminate()
@@ -141,7 +141,7 @@ def main() -> None:
             except Exception as err:  # never let one bad start take the public link down
                 print(f"Public link error: {err}")
             first = False
-            time.sleep(5)
+            time.sleep(1)
     except KeyboardInterrupt:
         pass
 
