@@ -51,7 +51,10 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
       .then((stream) => {
         if (cancelled) return stream.getTracks().forEach((t) => t.stop());
         streamRef.current = stream;
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        video.srcObject = stream;
+        // Some phone browsers only start the stream when play() is called explicitly
+        video.play().catch(() => {});
       })
       .catch((err) => {
         const messages = {
@@ -110,7 +113,7 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
   return (
     <div className="space-y-3">
       <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-900">
-        <video ref={videoRef} autoPlay playsInline muted onLoadedData={() => setReady(true)} className="w-full h-full object-cover" />
+        <video ref={videoRef} autoPlay playsInline muted onLoadedMetadata={() => setReady(true)} onLoadedData={() => setReady(true)} onPlaying={() => setReady(true)} className="w-full h-full object-cover" />
         <div className="absolute inset-x-0 top-0 bg-black/55 px-3 py-2 text-white text-[11px] sm:text-xs leading-snug font-semibold">
           <p className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
