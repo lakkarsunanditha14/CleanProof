@@ -280,7 +280,8 @@ def photo_relevance(image: Image.Image) -> Tuple[bool, Optional[str]]:
         "a meal served on a plate": "food",
         "a dog, cat or other animal": "an animal",
         "a car, bike or other vehicle": "a vehicle",
-        "a clean empty room": "a clean room"
+        "a clean empty room": "a clean room",
+        "a clean empty table or surface with nothing on it": "a clean surface"
     }
     not_relevant_labels = list(not_relevant_mapping.keys())
     all_labels = relevant_labels + not_relevant_labels
