@@ -138,7 +138,7 @@ def reset_demo_database():
                 "category": "construction debris",
                 "ward": "Kukatpally",
                 "lat": 17.4950, "lon": 78.3998,
-                "created_offset_h": 2,
+                "created_offset_h": 74, # 72h SLA -> already 2h overdue: live demo of the delay reason
                 "before_file": "before_2.png"
             },
             {
@@ -154,7 +154,7 @@ def reset_demo_database():
                 "category": "unswept street",
                 "ward": "Secunderabad",
                 "lat": 17.4401, "lon": 78.4985,
-                "created_offset_h": 26, # 24h SLA -> already 2h overdue: live demo of the delay reason
+                "created_offset_h": 2,
                 "before_file": "before_4.png"
             },
             {
@@ -234,11 +234,11 @@ def reset_demo_database():
             lon_exif = dc["lon"] + 0.00007
             add_exif_to_jpeg(str(target_upload), lat_exif, lon_exif, dt_30m_ago_ist)
 
-        # fake_reused_dirty_2.jpg (from before_2, EXIF GPS = complaint 2 location, DateTimeOriginal = 1 day ago)
-        fake_2_path = upload_dir / "fake_reused_dirty_2.jpg"
-        convert_to_jpeg(demo_before_dir / "before_2.png", fake_2_path)
+        # fake_reused_dirty_4.jpg (from before_4, EXIF GPS = complaint 4 location, DateTimeOriginal = 1 day ago)
+        fake_4_path = upload_dir / "fake_reused_dirty_4.jpg"
+        convert_to_jpeg(demo_before_dir / "before_4.png", fake_4_path)
         dt_1day_ago_ist = (now_ist - timedelta(days=1)).strftime("%Y:%m:%d %H:%M:%S")
-        add_exif_to_jpeg(str(fake_2_path), 17.4950, 78.3998, dt_1day_ago_ist)
+        add_exif_to_jpeg(str(fake_4_path), 17.4401, 78.4985, dt_1day_ago_ist)
 
         # fake_wrong_place_for_1.jpg (from after_3, EXIF GPS = complaint 3 location in Madhapur, far from Ameerpet)
         fake_wrong_place_path = upload_dir / "fake_wrong_place_for_1.jpg"
@@ -263,13 +263,13 @@ STEP 1  Genuine clean-up
   Expected: 100/100 VERIFIED (all 5 checks pass)
 
 STEP 2  Dirty photo re-uploaded as "proof"
-  Upload fake_reused_dirty_2.jpg to complaint #{ids[1]} (Kukatpally)
+  Upload fake_reused_dirty_4.jpg to complaint #{ids[3]} (Secunderabad)
   Expected: 20/100 LIKELY FAKE
   (CLIP: problem not reduced -50, photo older than the complaint -30)
 
 STEP 3  Citizen reopens
-  Track page, complaint #{ids[1]}: Reopen with any photo
-  Expected: status REOPENED, deadline restarts
+  Track page, complaint #{ids[3]}: Reopen with a photo that still shows the litter
+  (fake_reused_dirty_4.jpg works). Expected: status REOPENED, deadline restarts
 
 STEP 4  AI-generated "clean" photo (no camera data)
   Upload fake_ai_clean_for_6.jpg to complaint #{ids[5]} (Mehdipatnam)
@@ -281,8 +281,8 @@ STEP 5  Real clean photo from a different place
   Expected: 70/100 SUSPICIOUS (photo taken km away from the complaint -30)
 
 STEP 6  Closed after the deadline (reason required)
-  Complaint #{ids[3]} (Secunderabad) is already 2h past its 24h deadline.
-  Click Resolve, upload genuine_after_4.jpg, pick a delay reason (e.g. Vehicle or staff shortage)
+  Complaint #{ids[1]} (Kukatpally, debris) is already 2h past its 72h deadline.
+  Click Resolve, upload genuine_after_2.jpg, pick a delay reason (e.g. Vehicle or staff shortage)
   Expected: 100/100 VERIFIED, "Closed 2h after the deadline. Reason: ..."
   (Without a reason the closure is refused.)
 
@@ -294,7 +294,7 @@ STEP 7  Live camera (the answer to "what if the worker uploads an old photo?")
   (Allow camera and location in Chrome when asked. Uses the laptop webcam.)
 
 STEP 8  Dashboard
-  Everything you just did is on it: suspected fake closures by ward (Kukatpally, Mehdipatnam,
+  Everything you just did is on it: suspected fake closures by ward (Secunderabad, Mehdipatnam,
   Dilsukhnagar), the late closure and its reason, the map and the review queue count.
   (Only real, live complaints are shown. Run reset_demo.py --with-history for 194 synthetic past ones.)
 

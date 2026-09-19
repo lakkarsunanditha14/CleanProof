@@ -8,13 +8,13 @@ STEP 1  Genuine clean-up
   Expected: 100/100 VERIFIED (all 5 checks pass)
 
 STEP 2  Dirty photo re-uploaded as "proof"
-  Upload fake_reused_dirty_2.jpg to complaint #2 (Kukatpally)
+  Upload fake_reused_dirty_4.jpg to complaint #4 (Secunderabad)
   Expected: 20/100 LIKELY FAKE
   (CLIP: problem not reduced -50, photo older than the complaint -30)
 
 STEP 3  Citizen reopens
-  Track page, complaint #2: Reopen with any photo
-  Expected: status REOPENED, deadline restarts
+  Track page, complaint #4: Reopen with a photo that still shows the litter
+  (fake_reused_dirty_4.jpg works). Expected: status REOPENED, deadline restarts
 
 STEP 4  AI-generated "clean" photo (no camera data)
   Upload fake_ai_clean_for_6.jpg to complaint #6 (Mehdipatnam)
@@ -26,8 +26,8 @@ STEP 5  Real clean photo from a different place
   Expected: 70/100 SUSPICIOUS (photo taken km away from the complaint -30)
 
 STEP 6  Closed after the deadline (reason required)
-  Complaint #4 (Secunderabad) is already 2h past its 24h deadline.
-  Click Resolve, upload genuine_after_4.jpg, pick a delay reason (e.g. Vehicle or staff shortage)
+  Complaint #2 (Kukatpally, debris) is already 2h past its 72h deadline.
+  Click Resolve, upload genuine_after_2.jpg, pick a delay reason (e.g. Vehicle or staff shortage)
   Expected: 100/100 VERIFIED, "Closed 2h after the deadline. Reason: ..."
   (Without a reason the closure is refused.)
 
@@ -39,7 +39,7 @@ STEP 7  Live camera (the answer to "what if the worker uploads an old photo?")
   (Allow camera and location in Chrome when asked. Uses the laptop webcam.)
 
 STEP 8  Dashboard
-  Everything you just did is on it: suspected fake closures by ward (Kukatpally, Mehdipatnam,
+  Everything you just did is on it: suspected fake closures by ward (Secunderabad, Mehdipatnam,
   Dilsukhnagar), the late closure and its reason, the map and the review queue count.
   (Only real, live complaints are shown. Run reset_demo.py --with-history for 194 synthetic past ones.)
 

@@ -67,23 +67,23 @@ def run_demo_dry_run():
         "reasons": res1["reasons"]
     })
 
-    # 2. Resolve #2 with fake_reused_dirty_2.jpg
-    res2 = resolve_via_api(2, "fake_reused_dirty_2.jpg")
+    # 2. Resolve #4 with fake_reused_dirty_4.jpg
+    res2 = resolve_via_api(4, "fake_reused_dirty_4.jpg")
     dry_run_records.append({
         "step": "2",
-        "complaint": "Complaint #2 (Kukatpally)",
-        "file": "fake_reused_dirty_2.jpg",
+        "complaint": "Complaint #4 (Secunderabad)",
+        "file": "fake_reused_dirty_4.jpg",
         "score": res2["score"],
         "verdict": res2["verdict"],
         "reasons": res2["reasons"]
     })
 
-    # 3. Reopen #2 with photo (status becomes REOPENED, SLA clock restarts)
-    reopen_res = reopen_via_api(2, "genuine_after_2.jpg", reason="Issue was not actually cleaned initially")
+    # 3. Reopen #4 with a photo that still shows the litter (status becomes REOPENED, SLA clock restarts)
+    reopen_res = reopen_via_api(4, "fake_reused_dirty_4.jpg", reason="Issue was not actually cleaned initially")
     dry_run_records.append({
         "step": "3",
-        "complaint": "Complaint #2 (Reopened by citizen)",
-        "file": "genuine_after_2.jpg",
+        "complaint": "Complaint #4 (Reopened by citizen)",
+        "file": "fake_reused_dirty_4.jpg",
         "score": "N/A",
         "verdict": reopen_res["status"],
         "reasons": [

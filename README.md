@@ -94,6 +94,21 @@ flowchart TD
 
 ---
 
+## 📸 Screenshots
+
+<table>
+<tr>
+<td width="50%"><b>📊 Accountability dashboard</b><br><sub>Fake-closure hotspots, on-time % and delay reasons by ward</sub><br><br><img src="docs/screenshots/dashboard.png"></td>
+<td width="50%"><b>🧾 Verified closure</b><br><sub>Before/after photos, score and photo evidence for everyone</sub><br><br><img src="docs/screenshots/track.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>⚖️ Human review</b><br><sub>Flagged closures side by side, with the reasons</sub><br><br><img src="docs/screenshots/review.png"></td>
+<td width="50%"><b>🧹 Worker task queue</b><br><sub>Due, overdue and closed complaints; resolve with a live photo</sub><br><br><img src="docs/screenshots/worker.png"></td>
+</tr>
+</table>
+
+---
+
 ## 🔍 The 5 checks
 
 Every closure starts at **100 points**. Each failed check deducts points and adds a plain-English reason.
