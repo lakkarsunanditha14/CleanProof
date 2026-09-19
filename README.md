@@ -2,6 +2,8 @@
 
 # 🧹 CleanProof
 
+## *Resolved? Prove it.*
+
 ### AI-Powered Verification of Civic Complaint Closures
 
 **A complaint marked "resolved" is a claim, not proof.**
@@ -27,8 +29,6 @@ was the photo taken **here**, **now**, and is it **real**?
 
 [![Live demo](https://img.shields.io/badge/▶%20LIVE%20DEMO-open%20the%20dashboard-0F6E5C?style=for-the-badge)](https://25215a6610-cleanproof.static.hf.space)
 
-<sub>The live demo runs on the team's laptop, so it is available while the demo is running.</sub>
-
 <br>
 
 [**Live dashboard**](https://25215a6610-cleanproof.static.hf.space) · [**The problem**](#-the-problem) · [**How it works**](#-how-it-works) · [**The 5 checks**](#-the-5-checks) · [**Features**](#-features) · [**Results**](#-results) · [**Run it**](#-run-it)
@@ -49,16 +49,26 @@ dismissed for closing complaints with **AI-faked before/after photos and spoofed
 
 ## 🔁 How it works
 
+<div align="center">
+
+| 1️⃣ Report | 2️⃣ Deadline | 3️⃣ Close | 4️⃣ Verify | 5️⃣ Review | 6️⃣ Track |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| 📸 | ⏱️ | 🧹 | 🤖 | ⚖️ | 📊 |
+| Citizen reports<br>with photo + GPS | Official SLA clock<br>12h to 72h | Worker closes with<br>live in-app photo | 5 checks give a<br>score from 0 to 100 | Flagged closures go<br>to a human reviewer | Every result lands on<br>the public dashboard |
+
+</div>
+
 ```mermaid
-flowchart LR
-    A["📸 Citizen reports<br/>photo + GPS"]:::citizen --> B["⏱️ Deadline starts<br/>12h to 72h"]:::sla
-    B --> C["🧹 Worker closes<br/>live in-app photo"]:::worker
-    C --> D{"🤖 5 checks<br/>score 0-100"}:::ai
-    D -->|"≥ 75"| E["✅ VERIFIED"]:::ok
-    D -->|"< 75"| F["⚖️ Human review"]:::review
-    F -->|"Confirmed fake"| G["🔁 Reopened"]:::bad
-    E --> H["📊 Public dashboard"]:::dash
-    G --> H
+flowchart TD
+    A["📸 Citizen reports: photo + GPS"]:::citizen --> B["⏱️ Deadline starts: 12h to 72h"]:::sla
+    B --> C["🧹 Worker closes with a live in-app photo"]:::worker
+    C --> D{"🤖 5 checks · score 0 to 100"}:::ai
+    D -->|"score ≥ 75"| E["✅ VERIFIED · complaint closed"]:::ok
+    D -->|"score below 75"| F["⚖️ Human review"]:::review
+    F -->|"Genuine"| E
+    F -->|"Confirmed fake"| G["🔁 Reopened · deadline restarts"]:::bad
+    G --> C
+    E --> H["📊 Public accountability dashboard"]:::dash
     classDef citizen fill:#E0F2FE,stroke:#0369A1,color:#0C4A6E
     classDef sla fill:#FEF3C7,stroke:#C77700,color:#78350F
     classDef worker fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95
