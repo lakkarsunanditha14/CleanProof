@@ -25,7 +25,13 @@ was the photo taken **here**, **now**, and is it **real**?
 
 <br>
 
-[**The problem**](#-the-problem) · [**How it works**](#-how-it-works) · [**The 5 checks**](#-the-5-checks) · [**Features**](#-features) · [**Results**](#-results) · [**Run it**](#-run-it)
+[![Live demo](https://img.shields.io/badge/▶%20LIVE%20DEMO-open%20the%20dashboard-0F6E5C?style=for-the-badge)](https://25215a6610-cleanproof.static.hf.space)
+
+<sub>The live demo runs on the team's laptop, so it is available while the demo is running.</sub>
+
+<br>
+
+[**Live dashboard**](https://25215a6610-cleanproof.static.hf.space) · [**The problem**](#-the-problem) · [**How it works**](#-how-it-works) · [**The 5 checks**](#-the-5-checks) · [**Features**](#-features) · [**Results**](#-results) · [**Run it**](#-run-it)
 
 </div>
 
