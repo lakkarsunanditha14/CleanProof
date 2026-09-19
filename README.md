@@ -115,7 +115,7 @@ Every closure starts at **100 points**. Each failed check deducts points and add
 
 | | Check | Catches | Points |
 |:-:|---|---|:-:|
-| 🤖 | **AI vision (CLIP)**: is the problem reduced vs. the citizen's photo? | Garbage still there | **−50** |
+| 🤖 | **AI vision (CLIP)**: is the problem reduced vs. the citizen's photo? | Garbage still there (some left: −10) | **−50** |
 | 📍 | **Location**: photo GPS within 50 m of the complaint | Photo taken elsewhere | **−30** |
 | 🕒 | **Time**: photo taken after the complaint (or reopen) | Old photos | **−30** |
 | 🔁 | **Duplicate**: perceptual fingerprint (pHash) | Same photo re-used | **−30** |

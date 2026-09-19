@@ -9,7 +9,7 @@ with a photo + GPS. A worker closes a complaint with an after photo, and CleanPr
 
 | Check | Penalty |
 |---|---|
-| AI vision (CLIP, local): problem not reduced vs the citizen's before photo | -50 |
+| AI vision (CLIP, local): problem not reduced vs the citizen's before photo (partly reduced: -10) | -50 |
 | Location: photo GPS > 50 m from complaint, or no GPS | -30 |
 | Time: photo taken before complaint/reopen, or no timestamp | -30 |
 | Duplicate: perceptual hash matches an earlier closure photo | -30 |

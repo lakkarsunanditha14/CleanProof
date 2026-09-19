@@ -9,6 +9,7 @@ from app.services.exif_service import (
     extract_exif_metadata
 )
 from app.services.clip_service import compare_photos_with_clip
+from app.config import CLIP_RATIO
 
 def run_resolution_verification_pipeline(
     db: Session,
@@ -22,7 +23,7 @@ def run_resolution_verification_pipeline(
     """
     Executes the 5-check resolution verification engine using local CLIP model photo comparison:
     - Base score: 100
-    - AI Vision (CLIP) problem not reduced: -50 pts
+    - AI Vision (CLIP) problem not reduced: -50 pts (partly reduced, some litter left: -10 pts)
     - GPS distance between before and after > 50m: -30 pts (Missing EXIF GPS: -30 pts)
     - After-photo timestamp earlier than complaint/reopen time: -30 pts (Missing EXIF Timestamp: -30 pts)
     - Duplicate after-photo (imagehash distance <= 5 with any previous after-photo): -30 pts
@@ -75,7 +76,13 @@ def run_resolution_verification_pipeline(
     clip_confidence = after_pct if after_pct is not None else 0.0
 
     if clip_status == "COMPLETED":
-        if clip_issue_present is True:
+        before_p = clip_res.get("before_problem_prob") or 0.0
+        after_p = clip_res.get("after_problem_prob") or 0.0
+        partly_cleaned = after_p < CLIP_RATIO * before_p  # clearly reduced, but some litter may remain
+        if clip_issue_present is True and partly_cleaned:
+            score -= 10
+            reasons.append(f"AI Vision (CLIP): litter reduced from {before_pct}% to {after_pct}%, but some may be left (-10 pts)")
+        elif clip_issue_present is True:
             score -= 50
             reasons.append(f"AI Vision (CLIP): problem not reduced (before {before_pct}%, after {after_pct}%) (-50 pts)")
         else:
