@@ -1,9 +1,15 @@
+# Only the backend (api/, backend/app) and the frontend source are needed in the cloud
 backend/venv
+backend/test_*
 frontend/node_modules
 frontend/dist
 frontend/certs
-data/datasets
-data/images
+data
+docs
 tools
+scripts
+Dockerfile
 *.db
 *.pdf
+*.png
+*.jpg
