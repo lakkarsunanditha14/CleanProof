@@ -34,5 +34,7 @@ RUN mkdir -p data/images && chown -R 1000:1000 /app
 USER 1000
 
 EXPOSE 7860
-# Fresh demo data on every start, then serve everything on the Spaces port
-CMD ["sh", "-c", "python scripts/reset_demo.py && python -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 7860"]
+# DATA_DIR holds the database and uploaded photos. On Azure App Service it is set to /home/data,
+# which survives restarts. Demo data is created only when there is no database yet.
+ENV DATA_DIR=/app/data/cloud
+CMD ["sh", "-c", "mkdir -p $DATA_DIR && export DATABASE_URL=sqlite:///$DATA_DIR/cleanproof.db IMAGES_DIR=$DATA_DIR/images && { [ -f $DATA_DIR/cleanproof.db ] || python scripts/reset_demo.py; } && python -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 7860"]
