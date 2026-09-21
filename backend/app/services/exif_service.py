@@ -1,16 +1,28 @@
 import math
 from typing import Tuple, Optional, Dict, Any
+import numpy as np
 from PIL import Image
-import imagehash
 import piexif
 from datetime import datetime
+
+# DCT-II matrix (as scipy.fftpack.dct), so the hash matches imagehash.phash without SciPy
+_N = np.arange(32)
+_DCT = 2 * np.cos(np.pi * _N[:, None] * (2 * _N[None, :] + 1) / 64)
+
+
+def phash_hex(img: Image.Image) -> str:
+    """Perceptual hash, identical to str(imagehash.phash(img)): 32x32 grey, DCT, 8x8 low frequencies vs median."""
+    pixels = np.asarray(img.convert("L").resize((32, 32), Image.Resampling.LANCZOS), dtype=np.float64)
+    low = np.round((_DCT @ pixels @ _DCT.T)[:8, :8], 6)  # drop float noise (flat images)
+    bits = "".join("1" if b else "0" for b in (low > np.median(low)).flatten())
+    return f"{int(bits, 2):016x}"
+
 
 def calculate_image_hash(image_path: str) -> str:
     """Calculates perceptual hash string (phash) for an image."""
     try:
         with Image.open(image_path) as img:
-            h = imagehash.phash(img)
-            return str(h)
+            return phash_hex(img)
     except Exception as e:
         print(f"Error calculating image hash for {image_path}: {e}")
         return ""
@@ -20,9 +32,7 @@ def compare_image_hashes(hash1_str: str, hash2_str: str) -> Optional[int]:
     if not hash1_str or not hash2_str:
         return None
     try:
-        h1 = imagehash.hex_to_hash(hash1_str)
-        h2 = imagehash.hex_to_hash(hash2_str)
-        return h1 - h2
+        return bin(int(hash1_str, 16) ^ int(hash2_str, 16)).count("1")
     except Exception as e:
         print(f"Error comparing hashes ({hash1_str} vs {hash2_str}): {e}")
         return None

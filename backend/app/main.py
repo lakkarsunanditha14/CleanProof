@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.config import IMAGES_DIR
 from app.routers import complaints, dashboard, verification
+from app.services import photo_store
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -29,9 +30,21 @@ app.add_middleware(
 # Ensure images directory exists
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-# Mount static files directory to serve uploaded before/after photos
-app.mount("/static/images", StaticFiles(directory=str(IMAGES_DIR)), name="static_images")
-app.mount("/data/images", StaticFiles(directory=str(IMAGES_DIR)), name="data_images")
+# Serve uploaded before/after photos (from the database copy in the cloud, see photo_store.py)
+if photo_store.ENABLED:
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+
+    @app.get("/static/images/{name}", include_in_schema=False)
+    @app.get("/data/images/{name}", include_in_schema=False)
+    def photo(name: str):
+        path = Path(photo_store.local_path(name))
+        if path.parent != IMAGES_DIR or not path.is_file():
+            raise HTTPException(status_code=404, detail="Photo not found")
+        return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
+else:
+    app.mount("/static/images", StaticFiles(directory=str(IMAGES_DIR)), name="static_images")
+    app.mount("/data/images", StaticFiles(directory=str(IMAGES_DIR)), name="data_images")
 
 # Register routers
 app.include_router(complaints.router)

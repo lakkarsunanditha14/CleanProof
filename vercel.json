@@ -1,0 +1,17 @@
+{
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "memory": 2048,
+      "excludeFiles": "{frontend/**,data/**,scripts/**,docs/**,tools/**,backend/venv/**,backend/test_*,**/*.db,**/__pycache__/**}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/static/(.*)", "destination": "/api/index" },
+    { "source": "/data/images/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

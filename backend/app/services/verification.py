@@ -10,6 +10,7 @@ from app.services.exif_service import (
 )
 from app.services.clip_service import compare_photos_with_clip
 from app.config import CLIP_RATIO
+from app.services.photo_store import local_path
 
 def run_resolution_verification_pipeline(
     db: Session,
@@ -64,7 +65,7 @@ def run_resolution_verification_pipeline(
 
     # CHECK 1: Local CLIP Vision Comparison (Before vs After)
     clip_res = compare_photos_with_clip(
-        before_image_path=complaint.before_image_path,
+        before_image_path=local_path(complaint.before_image_path),
         after_image_path=after_image_path,
         category=complaint.category
     )

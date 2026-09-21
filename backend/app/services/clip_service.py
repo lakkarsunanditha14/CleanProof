@@ -1,13 +1,30 @@
 import os
-import torch
+import threading
+import urllib.request
+from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
+
+import numpy as np
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
 from app.config import CLIP_THRESHOLD, CLIP_RATIO
 
+MODEL_NAME = "openai/clip-vit-base-patch32"
+# "torch" runs the original model (laptop). "onnx" runs the same model's vision encoder with
+# ONNX Runtime and precomputed label embeddings, small enough for free cloud hosting.
+CLIP_ENGINE = os.getenv("CLIP_ENGINE", "torch")
+TEXT_CACHE = Path(__file__).with_name("clip_text_embeddings.npz")
+ONNX_URL = ("https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/"
+            "d15189d7028b43f1d3e65039190477f6af591c2a/onnx/vision_model.onnx")
+ONNX_FILE = Path(os.getenv("CLIP_ONNX_FILE", "/tmp/clip/vision_model.onnx"))
+MEAN = np.array([0.48145466, 0.4578275, 0.40821073], dtype=np.float32)
+STD = np.array([0.26862954, 0.26130258, 0.27577711], dtype=np.float32)
+
 # Cached singleton model and processor instances
-_model: Optional[CLIPModel] = None
-_processor: Optional[CLIPProcessor] = None
+_model = None
+_processor = None
+_onnx = None
+_text = None
+_lock = threading.Lock()
 
 CATEGORY_LABEL_SETS = {
     "garbage dump": {
@@ -58,13 +75,62 @@ def _get_clip_model():
     """Lazy-loads and caches the CLIP model and processor in memory."""
     global _model, _processor
     if _model is None or _processor is None:
-        model_name = "openai/clip-vit-base-patch32"
-        print(f"Loading local CLIP model '{model_name}'...")
-        _processor = CLIPProcessor.from_pretrained(model_name)
-        _model = CLIPModel.from_pretrained(model_name)
+        from transformers import CLIPProcessor, CLIPModel
+        print(f"Loading local CLIP model '{MODEL_NAME}'...")
+        _processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+        _model = CLIPModel.from_pretrained(MODEL_NAME)
         _model.eval()
         print("Local CLIP model loaded successfully.")
     return _model, _processor
+
+def _pixels(image: Image.Image) -> np.ndarray:
+    """CLIP preprocessing (same steps as CLIPProcessor): shortest side 224 bicubic, centre crop, normalise."""
+    w, h = image.size
+    if w <= h:
+        size = (224, int(224 * h / w))
+    else:
+        size = (int(224 * w / h), 224)
+    img = image.resize(size, Image.Resampling.BICUBIC)
+    left, top = int((size[0] - 224) / 2), int((size[1] - 224) / 2)
+    arr = np.asarray(img.crop((left, top, left + 224, top + 224)), dtype=np.float32) / 255.0
+    return ((arr - MEAN) / STD).transpose(2, 0, 1)
+
+
+def _onnx_session():
+    global _onnx
+    with _lock:
+        if _onnx is None:
+            import onnxruntime as ort
+            if not ONNX_FILE.exists():
+                ONNX_FILE.parent.mkdir(parents=True, exist_ok=True)
+                tmp = ONNX_FILE.with_suffix(".part")
+                urllib.request.urlretrieve(ONNX_URL, tmp)
+                tmp.replace(ONNX_FILE)
+            _onnx = ort.InferenceSession(str(ONNX_FILE), providers=["CPUExecutionProvider"])
+    return _onnx
+
+
+def _label_probs(images: List[Image.Image], labels: List[str]) -> np.ndarray:
+    """Softmax over `labels` for each image: one row per image (same maths as CLIP's logits_per_image)."""
+    global _text
+    if CLIP_ENGINE == "onnx":
+        if _text is None:
+            data = np.load(TEXT_CACHE)
+            _text = (dict(zip(data["labels"].tolist(), data["embeds"])), float(data["scale"]))
+        cache, scale = _text
+        emb = _onnx_session().run(None, {"pixel_values": np.stack([_pixels(i) for i in images])})[0]
+        emb = emb / np.linalg.norm(emb, axis=1, keepdims=True)
+        logits = scale * emb @ np.stack([cache[label] for label in labels]).T
+    else:
+        import torch
+        model, processor = _get_clip_model()
+        inputs = processor(text=labels, images=images, return_tensors="pt", padding=True)
+        with torch.no_grad():
+            logits = model(**inputs).logits_per_image.numpy()
+    logits = logits - logits.max(axis=1, keepdims=True)
+    e = np.exp(logits)
+    return e / e.sum(axis=1, keepdims=True)
+
 
 # Added to every category, so scenes that are not a street (a table, a floor, a courtyard)
 # are still judged on litter vs clean instead of on "street or not".
@@ -111,15 +177,9 @@ def image_problem_probability(
     """Problem probability for one image: problem labels vs clean labels (highest over the views)."""
     if multi_crop is None:
         multi_crop = MULTI_CROP
-    all_labels = problem_labels + clean_labels
-    model, processor = _get_clip_model()
     views = _views(image.convert("RGB"), multi_crop)
-
-    inputs = processor(text=all_labels, images=views, return_tensors="pt", padding=True)
-    with torch.no_grad():
-        probs = model(**inputs).logits_per_image.softmax(dim=-1)  # one row per view
-
-    return float(probs[:, :len(problem_labels)].sum(dim=-1).max())
+    probs = _label_probs(views, problem_labels + clean_labels)  # one row per view
+    return float(probs[:, :len(problem_labels)].sum(axis=1).max())
 
 
 def get_image_problem_probability(
@@ -261,46 +321,59 @@ def analyze_resolution_with_clip(
             "error": str(e)
         }
 
+RELEVANT_LABELS = [
+    "garbage, litter or waste on the ground",
+    "an overflowing garbage bin",
+    "a drain blocked with rubbish",
+    "construction debris or rubble",
+    "a dirty unswept street",
+    "empty snack packets and wrappers thrown on a table or floor",
+    "plastic wrappers and litter left on a surface"
+]
+NOT_RELEVANT = {
+    "a close-up photo of a person's face": "a person's face",
+    "a photo of people posing or sitting together": "people",
+    "a selfie of one or more people": "people",
+    "a group of people in a room": "people",
+    "a person looking at the camera": "people",
+    "a screenshot, document or computer screen": "a screen or document",
+    "a meal served on a plate": "food",
+    "a dog, cat or other animal": "an animal",
+    "a car, bike or other vehicle": "a vehicle",
+    "a clean empty room": "a clean room",
+    "a clean empty table or surface with nothing on it": "a clean surface"
+}
+
+
 def photo_relevance(image: Image.Image) -> Tuple[bool, Optional[str]]:
     """Checks if the photo is relevant to a civic problem using CLIP."""
-    model, processor = _get_clip_model()
-    
-    relevant_labels = [
-        "garbage, litter or waste on the ground",
-        "an overflowing garbage bin",
-        "a drain blocked with rubbish",
-        "construction debris or rubble",
-        "a dirty unswept street",
-        "empty snack packets and wrappers thrown on a table or floor",
-        "plastic wrappers and litter left on a surface"
-    ]
-    not_relevant_mapping = {
-        "a close-up photo of a person's face": "a person's face",
-        "a photo of people posing or sitting together": "people",
-        "a selfie of one or more people": "people",
-        "a group of people in a room": "people",
-        "a person looking at the camera": "people",
-        "a screenshot, document or computer screen": "a screen or document",
-        "a meal served on a plate": "food",
-        "a dog, cat or other animal": "an animal",
-        "a car, bike or other vehicle": "a vehicle",
-        "a clean empty room": "a clean room",
-        "a clean empty table or surface with nothing on it": "a clean surface"
-    }
-    not_relevant_labels = list(not_relevant_mapping.keys())
-    all_labels = relevant_labels + not_relevant_labels
-    
-    inputs = processor(text=all_labels, images=[image.convert("RGB")], return_tensors="pt", padding=True)
-    with torch.no_grad():
-        probs = model(**inputs).logits_per_image.softmax(dim=-1)[0]
-    
-    relevant_prob = float(probs[:len(relevant_labels)].sum())
-    
+    not_relevant_labels = list(NOT_RELEVANT.keys())
+    probs = _label_probs([image.convert("RGB")], RELEVANT_LABELS + not_relevant_labels)[0]
+
+    relevant_prob = float(probs[:len(RELEVANT_LABELS)].sum())
     if relevant_prob > 0.5:
         return True, None
-        
-    not_rel_idx = int(probs[len(relevant_labels):].argmax())
-    best_not_rel_label = not_relevant_labels[not_rel_idx]
-    best_not_rel_short = not_relevant_mapping[best_not_rel_label]
-    
-    return False, best_not_rel_short
+
+    best = not_relevant_labels[int(probs[len(RELEVANT_LABELS):].argmax())]
+    return False, NOT_RELEVANT[best]
+
+
+def build_text_cache() -> None:
+    """Precompute every label's text embedding with the original model (run on the laptop after
+    changing any label): backend\venv\Scripts\python.exe -m app.services.clip_service"""
+    import torch
+    labels = list(dict.fromkeys(
+        [l for s in CATEGORY_LABEL_SETS.values() for l in s["problem"] + s["clean"]]
+        + GENERAL_PROBLEM + GENERAL_CLEAN + RELEVANT_LABELS + list(NOT_RELEVANT)))
+    model, processor = _get_clip_model()
+    with torch.no_grad():
+        tokens = processor(text=labels, return_tensors="pt", padding=True)
+        emb = model.text_projection(model.text_model(**tokens).pooler_output)
+        emb = (emb / emb.norm(dim=-1, keepdim=True)).numpy()
+        scale = float(model.logit_scale.exp())
+    np.savez(TEXT_CACHE, labels=np.array(labels), embeds=emb, scale=scale)
+    print(f"Saved {len(labels)} label embeddings to {TEXT_CACHE}")
+
+
+if __name__ == "__main__":
+    build_text_cache()

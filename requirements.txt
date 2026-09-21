@@ -1,0 +1,12 @@
+# Cloud (Vercel) dependencies: the backend with the ONNX CLIP engine, no PyTorch.
+# The laptop setup uses backend/requirements.txt.
+fastapi>=0.100.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+Pillow>=10.1.0
+piexif>=1.1.3
+python-dotenv>=1.0.0
+numpy
+onnxruntime
+psycopg2-binary

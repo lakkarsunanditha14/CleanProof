@@ -20,7 +20,8 @@ env_db_url = os.getenv("DATABASE_URL")
 if not env_db_url or env_db_url.startswith("sqlite:///./"):
     DATABASE_URL = DEFAULT_DATABASE_URL
 else:
-    DATABASE_URL = env_db_url
+    # Cloud Postgres (Neon) gives postgres://..., SQLAlchemy expects postgresql://...
+    DATABASE_URL = env_db_url.replace("postgres://", "postgresql://", 1)
 
 # Image directory path (absolute path to data/images).
 # A relative IMAGES_DIR in .env is resolved against the backend folder, never the current folder.
