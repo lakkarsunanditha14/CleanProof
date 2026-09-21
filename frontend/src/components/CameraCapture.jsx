@@ -32,6 +32,7 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
   const [location, setLocation] = useState({ state: 'pending' });
   const [now, setNow] = useState(() => new Date());
   const [street, setStreet] = useState('');
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     if (location.state === 'ok' && location.accuracy <= STREET_MAX_ACCURACY_M) {
@@ -46,6 +47,21 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
 
   useEffect(() => {
     let cancelled = false;
+    // One permission request at a time: phone browsers show a single popup, so asking for
+    // camera and location together can leave the camera request waiting forever.
+    const askLocation = () => {
+      if (cancelled) return;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => !cancelled && setLocation({ state: 'ok', lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          () => !cancelled && setLocation({ state: 'failed' }),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        setLocation({ state: 'failed' });
+      }
+    };
+    const slowTimer = setTimeout(() => !cancelled && setSlow(true), 6000);
     navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false })
       .then((stream) => {
@@ -63,20 +79,15 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
           NotFoundError: 'No camera found on this device.',
         };
         setError(messages[err.name] || `The camera could not be opened (${err.name}). Close other tabs using it and try again.`);
-      });
-    if (!navigator.mediaDevices) setError('This browser cannot open the camera.');
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => !cancelled && setLocation({ state: 'ok', lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-        () => !cancelled && setLocation({ state: 'failed' }),
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setLocation({ state: 'failed' });
+      })
+      .finally(askLocation);
+    if (!navigator.mediaDevices) {
+      setError('This browser cannot open the camera.');
+      askLocation();
     }
     return () => {
       cancelled = true;
+      clearTimeout(slowTimer);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -127,6 +138,12 @@ export default function CameraCapture({ onCapture, onCancel, stampLabel = 'New r
           </p>
         </div>
       </div>
+      {slow && !ready && (
+        <p className="text-xs text-[#B42318]">
+          Camera not started yet. If a permission popup is showing, tap <b>Allow</b>. Otherwise tap the lock icon
+          in the address bar, set <b>Camera</b> to Allow, and reload the page.
+        </p>
+      )}
       <p className="text-xs text-slate-600 flex items-center gap-1.5">
         <MapPin className="w-3.5 h-3.5" />
         {location.state === 'pending' && 'Getting your location...'}
