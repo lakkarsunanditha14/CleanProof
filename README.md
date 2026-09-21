@@ -27,11 +27,11 @@ was the photo taken **here**, **now**, and is it **real**?
 
 <br>
 
-[![Live demo](https://img.shields.io/badge/▶%20LIVE%20DEMO-open%20the%20dashboard-0F6E5C?style=for-the-badge)](https://25215a6610-cleanproof.static.hf.space)
+[![Live demo](https://img.shields.io/badge/▶%20LIVE%20DEMO-open%20the%20dashboard-0F6E5C?style=for-the-badge)](https://cleanproof-seven.vercel.app/dashboard)
 
 <br>
 
-[**Live dashboard**](https://25215a6610-cleanproof.static.hf.space) · [**The problem**](#-the-problem) · [**How it works**](#-how-it-works) · [**The 5 checks**](#-the-5-checks) · [**Features**](#-features) · [**Results**](#-results) · [**Run it**](#-run-it)
+[**Live dashboard**](https://cleanproof-seven.vercel.app/dashboard) · [**The problem**](#-the-problem) · [**How it works**](#-how-it-works) · [**The 5 checks**](#-the-5-checks) · [**Features**](#-features) · [**Results**](#-results) · [**Run it**](#-run-it)
 
 </div>
 

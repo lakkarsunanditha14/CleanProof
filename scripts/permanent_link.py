@@ -1,18 +1,18 @@
-"""Keep one permanent link that always forwards to the current public tunnel link.
+"""Keep the permanent link (a free static Hugging Face Space) forwarding to the cloud app.
 
-A free *static* Hugging Face Space (https://<username>-cleanproof.static.hf.space) holds a small page
-that forwards visitors to the Cloudflare tunnel started by public_link.py. Only this forwarding
-page is published, no app code. It works while this laptop is running the app.
+https://25215a6610-cleanproof.static.hf.space was shared earlier (forms, README), so it stays
+valid and simply forwards visitors to the live dashboard on Vercel.
 
 Requires a one-time login: backend\\venv\\Scripts\\hf.exe auth login
+Run: backend\\venv\\Scripts\\python.exe scripts\\permanent_link.py [https://<app address>]
 """
 import re
-from pathlib import Path
+import sys
 
 from huggingface_hub import HfApi
 
 SPACE_NAME = "cleanproof"
-SNAPSHOT = Path(__file__).resolve().parents[1] / "docs" / "screenshots" / "dashboard.png"  # shown when offline
+APP_URL = "https://cleanproof-seven.vercel.app"
 
 README = """---
 title: CleanProof
@@ -24,7 +24,7 @@ pinned: false
 short_description: Permanent link to the CleanProof live demo
 ---
 
-Forwards to the live CleanProof demo running on the team's laptop.
+Forwards to the live CleanProof dashboard.
 """
 
 PAGE = """<!doctype html>
@@ -33,47 +33,18 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CleanProof</title>
-<style>
-  body {{ font-family: system-ui, sans-serif; background: #f8fafc; color: #1b2430; margin: 0;
-         min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; }}
-  .card {{ background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px 24px; max-width: 420px; margin: 16px; }}
-  h1 {{ color: #0f6e5c; margin: 0 0 8px; }}
-  a.button {{ display: inline-block; margin-top: 16px; background: #0f6e5c; color: #fff; padding: 12px 20px;
-             border-radius: 12px; text-decoration: none; font-weight: 600; }}
-  p.note {{ color: #64748b; font-size: 14px; }}
-  #offline {{ display: none; max-width: 1100px; margin: 16px; }}
-  #offline img {{ width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; }}
-</style>
+<meta http-equiv="refresh" content="0; url={url}/dashboard">
 </head>
-<body>
-<div class="card" id="loading">
-  <h1>CleanProof</h1>
-  <p>Opening the live dashboard...</p>
-</div>
-<div id="offline">
-  <h1>CleanProof dashboard</h1>
-  <p class="note">Latest saved snapshot of the dashboard. The live version opens by itself as soon
-     as the demo laptop is back online.</p>
-  <img src="dashboard.png" alt="CleanProof accountability dashboard">
-</div>
-<script>
-  // Open the live dashboard if the demo laptop answers; otherwise show the snapshot and keep checking.
-  // Each check re-reads this page, because a restarted tunnel publishes a new link here.
-  const go = (live) => {{ try {{ window.top.location.replace(live + "/dashboard"); }} catch (e) {{ location.replace(live + "/dashboard"); }} }};
-  const offline = () => {{ document.getElementById("loading").style.display = "none";
-                           document.getElementById("offline").style.display = "block"; }};
-  const check = (live) => fetch(live + "/api/dashboard/stats", {{ cache: "no-store", signal: AbortSignal.timeout(4000) }})
-    .then(r => {{ if (!r.ok) throw 0; go(live); }});
-  const latest = () => fetch("index.html", {{ cache: "no-store" }}).then(r => r.text())
-    .then(t => check(t.match(/https:[/][/][a-z0-9-]+[.]trycloudflare[.]com/)[0]));
-  check("{url}").catch(() => {{ offline(); setInterval(() => latest().catch(() => {{}}), 10000); }});
-</script>
+<body style="font-family: system-ui, sans-serif; text-align: center; padding: 48px 16px; color: #1b2430">
+<p>Opening the CleanProof dashboard...</p>
+<p><a href="{url}/dashboard" target="_top" style="color: #0f6e5c">Open it here</a></p>
+<script>try {{ window.top.location.replace("{url}/dashboard"); }} catch (e) {{ location.replace("{url}/dashboard"); }}</script>
 </body>
 </html>
 """
 
 
-def update_permanent_link(url: str) -> str:
+def update_permanent_link(url: str = APP_URL) -> str:
     """Point the permanent link at `url`. Returns the permanent link."""
     api = HfApi()
     user = api.whoami()["name"]
@@ -81,24 +52,10 @@ def update_permanent_link(url: str) -> str:
     api.create_repo(repo_id, repo_type="space", space_sdk="static", exist_ok=True)
     api.upload_file(path_or_fileobj=README.encode(), path_in_repo="README.md",
                     repo_id=repo_id, repo_type="space", commit_message="CleanProof permanent link")
-    if not api.file_exists(repo_id, "dashboard.png", repo_type="space"):  # keep newer live snapshots
-        api.upload_file(path_or_fileobj=str(SNAPSHOT), path_in_repo="dashboard.png",
-                        repo_id=repo_id, repo_type="space", commit_message="Dashboard snapshot")
     api.upload_file(path_or_fileobj=PAGE.format(url=url).encode(), path_in_repo="index.html",
                     repo_id=repo_id, repo_type="space", commit_message=f"Forward to {url}")
     return "https://" + re.sub(r"[^a-z0-9]+", "-", f"{user}-{SPACE_NAME}".lower()).strip("-") + ".static.hf.space"
 
 
-def upload_snapshot(png) -> None:
-    """Replace the offline dashboard snapshot with a newer picture."""
-    api = HfApi()
-    api.upload_file(path_or_fileobj=str(png), path_in_repo="dashboard.png",
-                    repo_id=f"{api.whoami()['name']}/{SPACE_NAME}", repo_type="space",
-                    commit_message="Fresh dashboard snapshot")
-
-
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 2:
-        sys.exit("usage: permanent_link.py https://<current-tunnel-link>")
-    print(update_permanent_link(sys.argv[1]))
+    print(update_permanent_link(sys.argv[1] if len(sys.argv) > 1 else APP_URL))

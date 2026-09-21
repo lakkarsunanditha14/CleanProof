@@ -76,7 +76,7 @@ function ChartCard({ title, subtitle, children, height = 300, empty }) {
   );
 }
 
-// Headless Edge (offline snapshot, scripts/public_link.py) never finishes chart animations
+// Headless browsers (automated screenshots) never finish chart animations
 const ANIMATE = !/Headless/.test(navigator.userAgent);
 const axisProps = { tick: { fill: INK, fontSize: 12 }, axisLine: false, tickLine: false };
 const tooltipProps = {

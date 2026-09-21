@@ -1,6 +1,6 @@
 @echo off
-rem Starts CleanProof for a demo: fresh demo data, backend, frontend and a public link for phones.
-rem Close the three windows it opens to stop everything.
+rem Starts CleanProof on this laptop (backend + frontend). The public link runs in the cloud
+rem (Vercel) and does not need this laptop. Close the two windows it opens to stop everything.
 cd /d "%~dp0"
 rem Make sure Node.js is found even if Windows has not refreshed PATH since it was installed
 set "PATH=C:\Program Files\nodejs;%PATH%"
@@ -22,11 +22,10 @@ echo Waiting for the servers to start...
 timeout /t 8 /nobreak > nul
 
 start "" msedge "https://localhost:5173/dashboard"
-start "CleanProof public link" cmd /k "cd /d "%~dp0" && backend\venv\Scripts\python.exe scripts\public_link.py"
 
 echo.
 echo CleanProof is starting:
 echo   - Laptop:  https://localhost:5173  (opened in Edge)
-echo   - Phones:  https://25215a6610-cleanproof.static.hf.space  (permanent link, same QR every time)
+echo   - Public:  https://cleanproof-seven.vercel.app  (cloud, works without this laptop)
 echo.
 pause
